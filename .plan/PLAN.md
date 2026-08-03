@@ -13,7 +13,8 @@ single-container Docker image.
 
 ## Current phase
 
-**Phase 6 — Web UI** (next up; awaiting user go-ahead)
+**Phase 7 — Skill + Docs** (in progress; user pre-approved continuing past the
+phase 6 boundary in this session)
 
 ## Phase index
 
@@ -25,7 +26,7 @@ single-container Docker image.
 | 3 | [phase-3-mcp.md](phase-3-mcp.md) | ✅ done (2026-08-03) |
 | 4 | [phase-4-cli-packaging.md](phase-4-cli-packaging.md) | ✅ done (2026-08-03) |
 | 5 | [phase-5-docker.md](phase-5-docker.md) | ✅ done (2026-08-03) |
-| 6 | [phase-6-web-ui.md](phase-6-web-ui.md) | pending |
+| 6 | [phase-6-web-ui.md](phase-6-web-ui.md) | ✅ done (2026-08-03) |
 | 7 | [phase-7-skill-docs.md](phase-7-skill-docs.md) | pending |
 
 Work strictly one phase at a time. Each phase file has a goal, task list, out-of-scope
@@ -46,6 +47,15 @@ passes. **Stop at the end of each phase for user review before starting the next
 - **2026-08-03** Default port 3547, default bind 127.0.0.1. Data dir via env-paths (`~/.local/share/agenticket`), override with `AGENTICKET_DATA_DIR`.
 - **2026-08-03** Pidfile is owned by the foreground server process (not the daemon parent): written on boot, removed on graceful shutdown — so Docker's `start --foreground` gets `status`/`stop` for free. Line 2 of the pidfile records the actually-bound `host:port` so `status` never lies when flags overrode config.
 - **2026-08-03** Docker image: two-stage on `oven/bun:1-slim`, both stages `bun install --ignore-scripts` (runtime uses `bun:sqlite`; better-sqlite3 postinstall never needed). HEALTHCHECK is shell-form `bun -e` fetch reading `AGENTICKET_PORT` (no curl in slim image). No lockfile copied into the image — builds resolve semver-fresh for now.
+- **2026-08-03** Web UI design (phase 6): user rejected the strict-TUI first mock —
+  final direction is full-width, 16px base, sans-serif body with mono reserved for
+  keys/data, dark ground + amber accent, generous spacing; "terminal as flavor, not
+  constraint". Amber consistently marks agent identity (⚡name) vs human (@name).
+- **2026-08-03** Web UI implementation: CSS + enhancement JS embedded as strings
+  (`src/web/assets.ts`) and served from memory — no static folder to resolve at
+  runtime. Forms-first (works without JS) + ~20-line progressive enhancement.
+  Token plaintext is rendered directly into the create response, never a URL.
+  `IssueSummary` now exposes `assigneeType`.
 - **2026-08-03** smoke-pack's Bun leg installs with `bun add --ignore-scripts` to mirror real `bunx`: better-sqlite3's postinstall never runs under Bun (plain `bun add` would fail on node-gyp), which is exactly the scenario the dynamic-driver rule protects.
 
 ## Standing rules (apply in every phase)
@@ -88,11 +98,16 @@ passes. **Stop at the end of each phase for user review before starting the next
   healthz → token via exec → MCP call from host → restart with data intact →
   HEALTHCHECK healthy.
 
+- **2026-08-03** Phase 6 complete: full web UI (`src/web/`) — login, project list
+  + create, issue list (epic tree, command-line filters, derived blocked flags),
+  issue detail (status/priority controls, comments with agent attribution),
+  ready queue, token admin (create shows plaintext once, revoke). 62 tests total;
+  live walkthrough verified on Node and smoke-tested on Bun.
+
 ## Handoff notes for next phase
 
-See "Handoff notes" in phase-5-docker.md for the container layout. Phase 6 (Web UI)
-in brief: Hono JSX SSR with a terminal aesthetic and minimal client JS (see decision
-log); starts with a design pass. Auth already exists (admin password + session
-cookie from phase 2); the UI mounts alongside `/api/v1` and `/mcp` in `createApp`
-(`src/server.ts`). Use issue keys everywhere; "blocked" is derived from open
-`blocks` links, not a stored flag.
+Phase 7 (Skill + Docs): see phase-7-skill-docs.md for the task list. Everything it
+documents now exists: CLI (phase 4), Docker (phase 5), REST (phase 2), MCP with 11
+tools (phase 3, `src/mcp/`), web UI (phase 6). MCP endpoint is `POST /mcp` with
+`Authorization: Bearer agt_...`; default port 3547. Dogfood verification needs a
+live instance + a fresh token + a Claude Code session with the skill installed.

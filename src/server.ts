@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { createApi } from "./api/routes.js";
 import type { Db } from "./db/connect.js";
 import { createMcpRoute } from "./mcp/route.js";
+import { createWeb } from "./web/routes.js";
 
 export interface AppOptions {
   version: string;
@@ -14,6 +15,8 @@ export function createApp(opts: AppOptions): Hono {
   app.get("/healthz", (c) => c.json({ ok: true, version: opts.version }));
   app.route("/api/v1", createApi(opts.db));
   app.route("/mcp", createMcpRoute(opts.db));
+  // Web UI last: it owns "/" and every path not claimed above.
+  app.route("/", createWeb(opts.db, opts.version));
 
   return app;
 }

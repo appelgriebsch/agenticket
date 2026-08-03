@@ -225,7 +225,10 @@ describe("issues", () => {
   it("closing via PATCH reports newly-unblocked issues", async () => {
     await seedIssue({ title: "blocker" });
     await seedIssue({ title: "blocked" });
-    await app.request("/api/v1/issues/AGT-1/links", json("POST", { to: "AGT-2", type: "blocks" }, bearer));
+    await app.request(
+      "/api/v1/issues/AGT-1/links",
+      json("POST", { to: "AGT-2", type: "blocks" }, bearer),
+    );
 
     const closed = await app.request(
       "/api/v1/issues/AGT-1",
@@ -309,7 +312,10 @@ describe("links", () => {
   });
 
   it("rejects link cycles through the API", async () => {
-    await app.request("/api/v1/issues/AGT-1/links", json("POST", { to: "AGT-2", type: "blocks" }, bearer));
+    await app.request(
+      "/api/v1/issues/AGT-1/links",
+      json("POST", { to: "AGT-2", type: "blocks" }, bearer),
+    );
     const cycle = await app.request(
       "/api/v1/issues/AGT-2/links",
       json("POST", { to: "AGT-1", type: "blocks" }, bearer),
@@ -324,7 +330,10 @@ describe("ready work", () => {
     await seedProject();
     await seedIssue({ title: "blocker" });
     await seedIssue({ title: "blocked" });
-    await app.request("/api/v1/issues/AGT-1/links", json("POST", { to: "AGT-2", type: "blocks" }, bearer));
+    await app.request(
+      "/api/v1/issues/AGT-1/links",
+      json("POST", { to: "AGT-2", type: "blocks" }, bearer),
+    );
 
     const res = await app.request("/api/v1/ready?project=AGT", { headers: bearer });
     expect(res.status).toBe(200);
@@ -340,10 +349,7 @@ describe("tokens", () => {
 
   it("creates (plaintext shown once), lists, and revokes tokens", async () => {
     const cookie = await login();
-    const created = await app.request(
-      "/api/v1/tokens",
-      json("POST", { name: "ci-bot" }, cookie),
-    );
+    const created = await app.request("/api/v1/tokens", json("POST", { name: "ci-bot" }, cookie));
     expect(created.status).toBe(201);
     const token = await jso(created);
     expect(token.token).toMatch(/^agt_/);

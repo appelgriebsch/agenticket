@@ -2,11 +2,11 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { issues } from "../src/db/schema.js";
 import { createToken } from "../src/auth/tokens.js";
 import type { Db } from "../src/db/connect.js";
-import { createApp } from "../src/server.js";
+import { issues } from "../src/db/schema.js";
 import { type RunningServer, serve } from "../src/serve.js";
+import { createApp } from "../src/server.js";
 import { testDb } from "./helpers.js";
 
 let db: Db;
@@ -39,7 +39,11 @@ async function mcpClient(bearer = token): Promise<Client> {
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: tests assert on dynamic JSON
-async function call(client: Client, name: string, args: Record<string, unknown> = {}): Promise<any> {
+async function call(
+  client: Client,
+  name: string,
+  args: Record<string, unknown> = {},
+): Promise<any> {
   const res = await client.callTool({ name, arguments: args });
   const text = (res.content as Array<{ type: string; text: string }>)[0]?.text ?? "";
   if (res.isError) throw new Error(text);

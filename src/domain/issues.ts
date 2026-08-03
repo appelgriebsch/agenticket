@@ -45,6 +45,7 @@ export interface IssueSummary {
   status: string;
   priority: number;
   assignee: string | null;
+  assigneeType: "agent" | "human" | null;
   epic: string | null;
   labels: string[];
   /** Keys of open issues blocking this one (derived; empty = not blocked by links). */
@@ -170,6 +171,7 @@ export function getIssue(db: Db, key: string): IssueDetail {
     status: row.status,
     priority: row.priority,
     assignee: row.assignee,
+    assigneeType: row.assigneeType as "agent" | "human" | null,
     epic: epicKeyById(db, row.epicId),
     labels: labelsForIssue(db, row.id),
     blockedBy: openBlockersFor(db, [row.id]).get(row.id) ?? [],
@@ -331,6 +333,7 @@ export function toSummary(db: Db, r: IssueRow, blockedBy: string[]): IssueSummar
     status: r.status,
     priority: r.priority,
     assignee: r.assignee,
+    assigneeType: r.assigneeType as "agent" | "human" | null,
     epic: epicKeyById(db, r.epicId),
     labels: labelsForIssue(db, r.id),
     blockedBy,
