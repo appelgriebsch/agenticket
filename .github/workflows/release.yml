@@ -17,6 +17,7 @@ jobs:
           node-version: 24
           cache: npm
       - uses: oven-sh/setup-bun@v2
+      - run: npm install -g npm@11
       - name: tag matches package.json version
         run: |
           PKG_VERSION=$(node -p "require('./package.json').version")
