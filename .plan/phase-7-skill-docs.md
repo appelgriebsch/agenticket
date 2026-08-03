@@ -44,8 +44,9 @@ workflow, install guides for common harnesses, and a real README.
   rewritten `README.md`, `scripts/smoke-skill.mjs`; `skill/` + `docs/` ship in
   the npm tarball (`files` in package.json).
 - v0.1.0 tagged at the phase-7 commit.
-- Publish checklist (when ready): `npm run build && npm test && npm run typecheck
-  && npm run lint` → `bash scripts/smoke-pack.sh` (npx + bunx legs) →
-  `npx tsx scripts/smoke-skill.mjs && bun scripts/smoke-skill.mjs` →
-  `npm pack --dry-run` sanity (bin, dist, skill, docs) → `npm publish` →
-  `docker build` + push image → GitHub release notes from the phase log.
+- Publishing is automated: `.github/workflows/release.yml` runs on `v*` tag
+  pushes — full verification (lint/typecheck/tests/build + all smokes on Node
+  AND Bun + smoke-pack), a tag↔package.json version guard, then `npm publish`
+  (auth via the `NPM_TOKEN` repo secret) and a GitHub release with generated
+  notes. To release: bump `version` in package.json, commit, `git tag vX.Y.Z`,
+  `git push --tags`. Docker image push is still manual if wanted.
