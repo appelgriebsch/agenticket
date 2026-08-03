@@ -37,17 +37,17 @@ agenticket admin set-password        # prompts; AGENTICKET_ADMIN_PASSWORD honore
 
 ## Tasks
 
-- [ ] `src/config.ts` — load/merge/save config; data-dir resolution
-- [ ] `src/cli/daemon.ts` — spawn/pidfile/health-wait/stop/status
-- [ ] Wire commands in `src/cli/index.ts`; graceful SIGTERM handler in server
+- [x] `src/config.ts` — load/merge/save config; data-dir resolution
+- [x] `src/cli/daemon.ts` — spawn/pidfile/health-wait/stop/status
+- [x] Wire commands in `src/cli/index.ts`; graceful SIGTERM handler in server
       (close HTTP → `PRAGMA wal_checkpoint(TRUNCATE)` → close db)
-- [ ] First-boot bootstrap: create data dir, migrate, seed statuses, set admin
+- [x] First-boot bootstrap: create data dir, migrate, seed statuses, set admin
       password from env if present (else warn UI login disabled until set)
-- [ ] `scripts/smoke-pack.sh`: `npm pack` → install tarball into temp dir →
+- [x] `scripts/smoke-pack.sh`: `npm pack` → install tarball into temp dir →
       `npx agenticket start` (Node) → curl /healthz → MCP ping with token →
       `agenticket stop`; repeat with `bunx` under Bun. **This test catches the two
       packaging landmines: migrations path resolution and bunx/better-sqlite3.**
-- [ ] GitHub Actions: Node 20 + 24 full suite; Bun job = build + smoke-pack
+- [x] GitHub Actions: Node 20 + 24 full suite; Bun job = build + smoke-pack
 
 ## Out of scope
 
@@ -63,4 +63,36 @@ agenticket start && agenticket status && agenticket stop   # via node bin/... lo
 
 ## Handoff notes
 
-_(fill in when phase completes)_
+Completed 2026-08-03. All verification items pass: 48 tests, typecheck, lint, build,
+`scripts/smoke-pack.sh` green on Node (npx) AND Bun (bunx), local
+start/status/restart/stop/config/token/admin exercised via `node bin/agenticket.js`.
+
+Layout & conventions:
+
+- `src/config.ts` — `resolveDataDir(override?)` (flag > `AGENTICKET_DATA_DIR` > env-paths),
+  `dataPaths(dir)` → `{db, config, pid, log}`, `resolveConfig(dir, flags)` implements
+  flags > env (`AGENTICKET_PORT`/`AGENTICKET_HOST`) > config.json > defaults
+  (3547 / 127.0.0.1). Config keys are just `port` + `host` for now (`CONFIG_KEYS`).
+- `src/cli/daemon.ts` — daemon spawns `process.execPath process.argv[1] start
+  --foreground ...`, detached, output → `agenticket.log`, polls `/healthz` (10s) and
+  aborts early if the child dies. **Pidfile is owned by the foreground server process**
+  (written on boot, removed on graceful shutdown), so Docker `start --foreground` gets
+  status/stop for free. Pidfile line 1 = pid, line 2 = actually-bound `host:port`
+  (so `status` reports the truth even when flags overrode config). Stale pids detected
+  via `kill(pid, 0)` and cleaned up.
+- `src/cli/index.ts` — global `--data-dir`; commands: start/stop/restart/status,
+  `config list|get|set`, `token create|list|revoke <name>` (revoke is by NAME, looked
+  up then revoked by id), `admin set-password` (hidden tty prompt; piped stdin works —
+  two lines = password + confirm — used by tests/scripts). Token/config commands open
+  the db directly (WAL) — no running server needed.
+- `scripts/smoke-pack.sh` — npm pack → temp installs; Bun leg uses
+  `bun add --ignore-scripts` to mirror real bunx behavior (better-sqlite3 postinstall
+  never runs under Bun; plain `bun add` would actually FAIL trying node-gyp). Ports
+  3591/3592 (override `SMOKE_NODE_PORT`/`SMOKE_BUN_PORT`).
+- `.github/workflows/ci.yml` — node job (20, 24): lint/typecheck/test/build + both
+  smoke scripts; bun job: smoke-db, smoke-mcp, smoke-pack.
+
+For phase 5 (Docker): run `agenticket start --foreground --host 0.0.0.0` as PID 1;
+mount the data dir as the volume (`AGENTICKET_DATA_DIR=/data`); SIGTERM already
+checkpoints WAL and removes the pidfile. `AGENTICKET_ADMIN_PASSWORD` bootstraps the
+admin password on first boot.

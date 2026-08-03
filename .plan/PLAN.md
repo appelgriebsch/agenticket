@@ -13,7 +13,7 @@ single-container Docker image.
 
 ## Current phase
 
-**Phase 4 — CLI & packaging** (next up; awaiting user go-ahead)
+**Phase 5 — Docker** (next up; awaiting user go-ahead)
 
 ## Phase index
 
@@ -23,7 +23,7 @@ single-container Docker image.
 | 1 | [phase-1-db-domain.md](phase-1-db-domain.md) | ✅ done (2026-08-03) |
 | 2 | [phase-2-rest-api.md](phase-2-rest-api.md) | ✅ done (2026-08-03) |
 | 3 | [phase-3-mcp.md](phase-3-mcp.md) | ✅ done (2026-08-03) |
-| 4 | [phase-4-cli-packaging.md](phase-4-cli-packaging.md) | pending |
+| 4 | [phase-4-cli-packaging.md](phase-4-cli-packaging.md) | ✅ done (2026-08-03) |
 | 5 | [phase-5-docker.md](phase-5-docker.md) | pending |
 | 6 | [phase-6-web-ui.md](phase-6-web-ui.md) | pending |
 | 7 | [phase-7-skill-docs.md](phase-7-skill-docs.md) | pending |
@@ -44,6 +44,8 @@ passes. **Stop at the end of each phase for user review before starting the next
 - **2026-08-03** Human auth: single admin password + session cookie. Agent auth: bearer tokens.
 - **2026-08-03** Web UI (phase 6): Hono JSX SSR, terminal aesthetic, minimal client JS. Design pass happens at the start of that phase.
 - **2026-08-03** Default port 3547, default bind 127.0.0.1. Data dir via env-paths (`~/.local/share/agenticket`), override with `AGENTICKET_DATA_DIR`.
+- **2026-08-03** Pidfile is owned by the foreground server process (not the daemon parent): written on boot, removed on graceful shutdown — so Docker's `start --foreground` gets `status`/`stop` for free. Line 2 of the pidfile records the actually-bound `host:port` so `status` never lies when flags overrode config.
+- **2026-08-03** smoke-pack's Bun leg installs with `bun add --ignore-scripts` to mirror real `bunx`: better-sqlite3's postinstall never runs under Bun (plain `bun add` would fail on node-gyp), which is exactly the scenario the dynamic-driver rule protects.
 
 ## Standing rules (apply in every phase)
 
@@ -75,14 +77,17 @@ passes. **Stop at the end of each phase for user review before starting the next
   (`src/mcp/`), 11 tools over the domain layer, bearer-token auth before the
   transport, 7 new tests (43 total) incl. 8-client concurrency; scripted session
   green under both runtimes via `scripts/smoke-mcp.mjs`.
+- **2026-08-03** Phase 4 complete: full CLI (start/stop/restart/status, config,
+  token create|list|revoke, admin set-password), daemonization with pidfile +
+  health-wait, config.json with flags>env>file>defaults precedence, graceful
+  SIGTERM (close HTTP → WAL checkpoint → remove pidfile), `scripts/smoke-pack.sh`
+  green under npx AND bunx, GitHub Actions CI added. 48 tests total.
 
 ## Handoff notes for next phase
 
-See "Handoff notes" in phase-3-mcp.md — it maps the `src/mcp/` layout, tool
-conventions (snake_case labels params, error-hint helper, no delete tools), and the
-smoke script. Phase 4 (CLI & packaging) should: build out `src/cli/index.ts`
-(commander is already a dep) with `start`, `token create|list|revoke`, and
-admin-password setup; `token create` calls `createToken` in `src/auth/tokens.ts` and
-prints the one-time plaintext. Config defaults live in `src/config.ts` (port 3547,
-bind 127.0.0.1, env-paths data dir, `AGENTICKET_DATA_DIR` override). Verify `npx`
-and `bunx` flows both work — the dynamic-driver rule exists for exactly that.
+See "Handoff notes" in phase-4-cli-packaging.md — it maps the CLI/daemon layout and
+conventions. Phase 5 (Docker) in brief: single-stage or two-stage image running
+`agenticket start --foreground --host 0.0.0.0` as PID 1, `AGENTICKET_DATA_DIR=/data`
+as the volume, `AGENTICKET_ADMIN_PASSWORD` honored on first boot, SIGTERM already
+does graceful shutdown (HTTP close → WAL checkpoint → pidfile removal). Add a
+container smoke to CI if docker is available there.
