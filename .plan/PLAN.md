@@ -13,14 +13,14 @@ single-container Docker image.
 
 ## Current phase
 
-**Phase 1 — DB + domain** (next up; awaiting user go-ahead)
+**Phase 2 — REST API + auth** (next up; awaiting user go-ahead)
 
 ## Phase index
 
 | Phase | File | Status |
 |---|---|---|
 | 0 | [phase-0-scaffolding.md](phase-0-scaffolding.md) | ✅ done (2026-08-03) |
-| 1 | [phase-1-db-domain.md](phase-1-db-domain.md) | pending |
+| 1 | [phase-1-db-domain.md](phase-1-db-domain.md) | ✅ done (2026-08-03) |
 | 2 | [phase-2-rest-api.md](phase-2-rest-api.md) | pending |
 | 3 | [phase-3-mcp.md](phase-3-mcp.md) | pending |
 | 4 | [phase-4-cli-packaging.md](phase-4-cli-packaging.md) | pending |
@@ -52,8 +52,10 @@ passes. **Stop at the end of each phase for user review before starting the next
    REST and MCP are thin adapters over the same domain layer.
 2. Never statically import `better-sqlite3` or `bun:sqlite` — dynamic import inside
    the runtime branch in `src/db/connect.ts` only.
-3. Migrations ship inside `dist/` and are resolved via `new URL(..., import.meta.url)`,
-   never `process.cwd()`.
+3. Migrations are **embedded as generated code** (`src/db/migrations.gen.ts`, produced
+   by `scripts/embed-migrations.mjs`, wired into `npm run db:generate`) — no folder to
+   resolve at runtime. Schema change workflow: edit `src/db/schema.ts` →
+   `npm run db:generate` → commit the .sql, meta journal, and regenerated .gen.ts.
 4. Keep SQLite transactions short (sync driver blocks the event loop).
 5. Issue identity in all external surfaces (MCP, REST, UI, CLI) is the **key**
    (`AGT-42`), never the internal integer id.
@@ -63,8 +65,14 @@ passes. **Stop at the end of each phase for user review before starting the next
 - **2026-08-03** Project kicked off. Plan agreed with user; phases seeded.
 - **2026-08-03** Phase 0 complete and verified (build/test/typecheck/lint green; hello
   server + `--version` verified under Node 26 and Bun 1.3). Initial commit made.
+- **2026-08-03** Phase 1 complete: schema + dual-driver connect + embedded migrations
+  (as generated code, see decision below) + full domain layer, 15 tests green, WAL
+  smoke passed on both runtimes.
 
 ## Handoff notes for next phase
 
-See "Handoff notes" in phase-0-scaffolding.md — key items: use tsdown `copy` option for
-migrations into dist; runtime-detect pattern to reuse lives in `src/serve.ts`.
+See "Handoff notes" in phase-1-db-domain.md — it lists the exact domain API surface,
+the DomainError→HTTP mapping, and the two deliberate deviations (embedded migrations,
+NULL-aware status seeding). Phase 2 builds Hono routes + auth on top of
+`src/domain/index.ts`; shared zod schemas go in `src/domain/schemas.ts` for reuse by
+MCP in phase 3.
