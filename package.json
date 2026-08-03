@@ -1,0 +1,56 @@
+{
+  "name": "agenticket",
+  "version": "0.1.0",
+  "description": "Agent-first issue tracker with a built-in MCP server",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "agenticket": "bin/agenticket.js"
+  },
+  "files": [
+    "bin",
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsx src/cli/index.ts start --foreground",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check src",
+    "lint:fix": "biome check --write src",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "@hono/mcp": "^0.3.1",
+    "@hono/node-server": "^2.0.12",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "better-sqlite3": "^13.0.2",
+    "commander": "^15.0.0",
+    "drizzle-orm": "^0.45.2",
+    "env-paths": "^4.0.0",
+    "hono": "^4.12.34",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.6",
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/bun": "^1.3.14",
+    "@types/node": "^26.1.2",
+    "drizzle-kit": "^0.31.10",
+    "tsdown": "^0.22.14",
+    "tsx": "^4.23.5",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  },
+  "allowScripts": {
+    "better-sqlite3@13.0.2": true,
+    "esbuild@0.18.20": true,
+    "esbuild@0.25.12": true,
+    "esbuild@0.28.1": true,
+    "@biomejs/biome@2.5.6": true
+  }
+}
