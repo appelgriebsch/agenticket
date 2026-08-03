@@ -36,17 +36,17 @@ No delete tools for agents (audit trail preservation); humans delete via UI/API.
 
 ## Tasks
 
-- [ ] `src/mcp/server.ts` — buildMcpServer(db, actor) registering all tools
-- [ ] `src/mcp/route.ts` — Hono route wiring auth + transport (stateless per-request)
-- [ ] Shared zod schemas from `src/domain/schemas.ts`
-- [ ] Tool results: concise JSON text content; errors as MCP tool errors with
+- [x] `src/mcp/server.ts` — buildMcpServer(db, actor) registering all tools
+- [x] `src/mcp/route.ts` — Hono route wiring auth + transport (stateless per-request)
+- [x] Shared zod schemas from `src/domain/schemas.ts`
+- [x] Tool results: concise JSON text content; errors as MCP tool errors with
       actionable messages (e.g. "AGT-99 not found; use list_issues")
-- [ ] Integration tests: real `@modelcontextprotocol/sdk` Client +
+- [x] Integration tests: real `@modelcontextprotocol/sdk` Client +
       `StreamableHTTPClientTransport` against a live ephemeral-port server —
       scripted session: create_project → create epic → create issues under epic →
       link blocks → ready_work excludes blocked → close_issue → ready_work now
       includes unblocked; also 401 without token
-- [ ] Concurrency smoke test: N parallel MCP clients creating issues (validates WAL
+- [x] Concurrency smoke test: N parallel MCP clients creating issues (validates WAL
       + busy_timeout + atomic numbering)
 
 ## Out of scope
@@ -68,4 +68,28 @@ npm test    # MCP integration + concurrency suites green (Node)
 
 ## Handoff notes
 
-_(fill in when phase completes)_
+**Completed 2026-08-03.** Verification: `npm test` 43/43 green (7 new MCP tests incl.
+8-client/40-issue concurrency), lint/typecheck/build green, and the scripted session
+run via `scripts/smoke-mcp.mjs` under BOTH `npx tsx` and `bun` (also checks the 401).
+
+Layout:
+- `src/mcp/server.ts` — `buildMcpServer(db, actor)`: registers the 11 tools; a `run()`
+  helper converts `DomainError` → MCP tool error (`isError: true`) and appends a
+  discovery hint on `not_found`. Results are pretty-printed JSON text content.
+- `src/mcp/route.ts` — `createMcpRoute(db)`: bearer-only auth (no session cookies on
+  the MCP surface) BEFORE the transport; fresh `McpServer` +
+  `StreamableHTTPTransport({ sessionIdGenerator: undefined })` per request (stateless).
+  401 body is a JSON-RPC error envelope.
+- Mounted in `src/server.ts` via `app.route("/mcp", ...)`.
+
+Conventions phase 4+ should know:
+- MCP param names are snake_case where the phase spec said so (`add_labels`,
+  `remove_labels`); they map to the domain's `addLabels`/`removeLabels`.
+- Tool input validation reuses field schemas from `src/domain/schemas.ts` via
+  `.shape.X.describe(...)` — constraints stay identical to REST.
+- `close_issue` accepts an optional `comment` (added before closing) and returns the
+  issue plus `unblocked: string[]`.
+- Agents get no delete tools (audit preservation) — deletes remain admin-only REST.
+- Phase 4 (CLI): `agenticket token create <name>` should call `createToken` in
+  `src/auth/tokens.ts` and print the one-time plaintext; MCP connect docs belong in
+  phase 7.

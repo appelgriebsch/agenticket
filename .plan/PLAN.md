@@ -13,7 +13,7 @@ single-container Docker image.
 
 ## Current phase
 
-**Phase 3 — MCP endpoint** (next up; awaiting user go-ahead)
+**Phase 4 — CLI & packaging** (next up; awaiting user go-ahead)
 
 ## Phase index
 
@@ -22,7 +22,7 @@ single-container Docker image.
 | 0 | [phase-0-scaffolding.md](phase-0-scaffolding.md) | ✅ done (2026-08-03) |
 | 1 | [phase-1-db-domain.md](phase-1-db-domain.md) | ✅ done (2026-08-03) |
 | 2 | [phase-2-rest-api.md](phase-2-rest-api.md) | ✅ done (2026-08-03) |
-| 3 | [phase-3-mcp.md](phase-3-mcp.md) | pending |
+| 3 | [phase-3-mcp.md](phase-3-mcp.md) | ✅ done (2026-08-03) |
 | 4 | [phase-4-cli-packaging.md](phase-4-cli-packaging.md) | pending |
 | 5 | [phase-5-docker.md](phase-5-docker.md) | pending |
 | 6 | [phase-6-web-ui.md](phase-6-web-ui.md) | pending |
@@ -71,12 +71,18 @@ passes. **Stop at the end of each phase for user review before starting the next
 - **2026-08-03** Phase 2 complete: full `/api/v1` REST surface + session/bearer auth,
   shared zod schemas in `src/domain/schemas.ts`, 21 new integration tests (36 total),
   manual curl smoke green under Node and Bun.
+- **2026-08-03** Phase 3 complete: stateless Streamable HTTP MCP at `POST /mcp`
+  (`src/mcp/`), 11 tools over the domain layer, bearer-token auth before the
+  transport, 7 new tests (43 total) incl. 8-client concurrency; scripted session
+  green under both runtimes via `scripts/smoke-mcp.mjs`.
 
 ## Handoff notes for next phase
 
-See "Handoff notes" in phase-2-rest-api.md — it maps the auth/api module layout,
-the error envelope, and API response conventions. Phase 3 (MCP) should: reuse the
-zod schemas from `src/domain/schemas.ts` for tool inputs, authenticate `POST /mcp`
-with the same bearer tokens via `authenticateToken` (`src/auth/tokens.ts`), and call
-domain functions directly (not the REST routes) with the agent Actor, mirroring how
-`src/api/routes.ts` does it.
+See "Handoff notes" in phase-3-mcp.md — it maps the `src/mcp/` layout, tool
+conventions (snake_case labels params, error-hint helper, no delete tools), and the
+smoke script. Phase 4 (CLI & packaging) should: build out `src/cli/index.ts`
+(commander is already a dep) with `start`, `token create|list|revoke`, and
+admin-password setup; `token create` calls `createToken` in `src/auth/tokens.ts` and
+prints the one-time plaintext. Config defaults live in `src/config.ts` (port 3547,
+bind 127.0.0.1, env-paths data dir, `AGENTICKET_DATA_DIR` override). Verify `npx`
+and `bunx` flows both work — the dynamic-driver rule exists for exactly that.
