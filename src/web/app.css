@@ -1,0 +1,85 @@
+/*
+ * Tailwind 4 source stylesheet for the web UI. Compiled at build time by
+ * `npm run css:generate` (scripts/embed-css.mjs) into src/web/app.css.gen.ts —
+ * Tailwind never runs at runtime, and the generated file is committed.
+ * Scans only src/web/ for class names.
+ */
+@import "tailwindcss" source("./");
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, "SF Mono", Menlo, Consolas,
+    monospace;
+}
+
+@layer base {
+  body {
+    @apply bg-white font-sans text-base leading-relaxed text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100;
+  }
+}
+
+@layer components {
+  /* form controls */
+  .input {
+    @apply rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder:text-gray-500;
+  }
+  .btn {
+    @apply inline-flex cursor-pointer items-center rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-amber-500/30 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800;
+  }
+  .btn-primary {
+    @apply border-amber-500 bg-amber-500 text-gray-900 hover:border-amber-400 hover:bg-amber-400 dark:border-amber-500 dark:bg-amber-500 dark:text-gray-900 dark:hover:bg-amber-400;
+  }
+  .btn-danger {
+    @apply border-transparent bg-transparent text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10;
+  }
+
+  /* status badges — statuses arrive as st-<name>, a fixed set */
+  .st {
+    @apply inline-block rounded-full border px-2.5 py-0.5 text-xs font-medium whitespace-nowrap;
+  }
+  .st-open {
+    @apply border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-800/60 dark:text-gray-300;
+  }
+  .st-in_progress {
+    @apply border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-400;
+  }
+  .st-blocked {
+    @apply border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400;
+  }
+  .st-in_review {
+    @apply border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-500/30 dark:bg-purple-500/10 dark:text-purple-400;
+  }
+  .st-done {
+    @apply border-green-200 bg-green-50 text-green-700 dark:border-green-500/30 dark:bg-green-500/10 dark:text-green-400;
+  }
+  .st-cancelled {
+    @apply border-gray-200 bg-gray-50 text-gray-400 line-through dark:border-gray-700 dark:bg-gray-800/60 dark:text-gray-500;
+  }
+
+  /* priorities — pri-0..pri-4 */
+  .pri {
+    @apply text-sm text-gray-500 dark:text-gray-400;
+  }
+  .pri-0 {
+    @apply font-bold text-red-600 dark:text-red-400;
+  }
+  .pri-1 {
+    @apply font-semibold text-amber-600 dark:text-amber-400;
+  }
+
+  /* notices — success by default, .error variant */
+  .notice {
+    @apply mb-6 max-w-2xl rounded-lg border border-green-300 bg-green-50 px-5 py-4 text-green-900 dark:border-green-500/30 dark:bg-green-500/10 dark:text-green-200;
+  }
+  .notice.error {
+    @apply border-red-300 bg-red-50 text-red-900 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200;
+  }
+
+  /* actor attribution — amber marks agents everywhere */
+  .agent {
+    @apply font-medium text-amber-600 dark:text-amber-400;
+  }
+  .human {
+    @apply font-medium text-gray-700 dark:text-gray-300;
+  }
+}

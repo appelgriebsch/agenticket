@@ -23,6 +23,9 @@ Rules:
 - `npm test` / `npm run typecheck` / `npm run lint` / `npm run build`
 - `npm run db:generate` — after editing `src/db/schema.ts` (regenerates SQL AND
   `src/db/migrations.gen.ts`; commit both)
+- `npm run css:generate` — after editing web markup classes or `src/web/app.css`
+  (Tailwind 4 compiles to `src/web/app.css.gen.ts`; commit it — runtime never
+  runs Tailwind)
 - Smoke db on both runtimes: `npx tsx scripts/smoke-db.mjs` and `bun scripts/smoke-db.mjs`
 
 ## Non-negotiable constraints

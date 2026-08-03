@@ -13,8 +13,9 @@ single-container Docker image.
 
 ## Current phase
 
-**Phase 8 done, awaiting user review.** Phase 9 (Tailwind 4 UI refresh) is
-planned next; its design pass happens at phase start with the user.
+**Phase 9 implemented, awaiting user sign-off on the new UI** (last
+verification item). Phase 8 was reviewed implicitly by the go-ahead to
+continue.
 
 ## Phase index
 
@@ -29,7 +30,7 @@ planned next; its design pass happens at phase start with the user.
 | 6 | [phase-6-web-ui.md](phase-6-web-ui.md) | ✅ done (2026-08-03) |
 | 7 | [phase-7-skill-docs.md](phase-7-skill-docs.md) | ✅ done (2026-08-03) |
 | 8 | [phase-8-install-command.md](phase-8-install-command.md) | ✅ done (2026-08-04) |
-| 9 | [phase-9-ui-tailwind.md](phase-9-ui-tailwind.md) | planned |
+| 9 | [phase-9-ui-tailwind.md](phase-9-ui-tailwind.md) | 🔎 awaiting UI sign-off |
 
 Work strictly one phase at a time. Each phase file has a goal, task list, out-of-scope
 list, and a verification checklist — a phase is done only when every verification item
@@ -67,6 +68,14 @@ passes. **Stop at the end of each phase for user review before starting the next
   → GitHub release. CI + release pin npm@11 (lockfile format); docker smoke greps
   for plain substrings because MCP tool results escape quotes inside `text`.
 - **2026-08-03** smoke-pack's Bun leg installs with `bun add --ignore-scripts` to mirror real `bunx`: better-sqlite3's postinstall never runs under Bun (plain `bun add` would fail on node-gyp), which is exactly the scenario the dynamic-driver rule protects.
+
+- **2026-08-04** Web UI direction (phase 9, supersedes the phase-6
+  terminal-flavor decision): standard, simple product look built with
+  **Tailwind 4** — light + dark via `prefers-color-scheme`, amber kept as the
+  accent/agent color, purple for epics. Tailwind runs at build time only:
+  `npm run css:generate` compiles `src/web/app.css` and embeds it as committed
+  `src/web/app.css.gen.ts` (same pattern as migrations); runtime and CI never
+  need Tailwind.
 
 ## Standing rules (apply in every phase)
 
@@ -132,6 +141,12 @@ passes. **Stop at the end of each phase for user review before starting the next
   `mcpServers` JSON block (JSON on stdout, notes on stderr). Default URL
   prefers the running server's bound address from the pidfile. Docs + README
   updated. 72 tests; live smoke on Node + Bun.
+
+- **2026-08-04** Phase 9 implemented: web UI rebuilt on Tailwind 4 — standard
+  light+dark design (system preference), amber accent, purple epics, inline
+  utilities + small component layer (`.btn/.input/.st-*`). Build wiring:
+  `scripts/embed-css.mjs` + committed `app.css.gen.ts`. 72 tests green;
+  walkthrough on Node + Bun smoke. Awaiting user sign-off on the look.
 
 ## Handoff notes for next phase
 

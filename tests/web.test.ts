@@ -154,7 +154,7 @@ describe("web pages", () => {
     const html = await (await get("/i/WEB-2")).text();
     expect(html).toContain("in progress");
     expect(html).toContain("looks good from the UI");
-    expect(html).toContain('<span class="human">admin</span>'); // human attribution
+    expect(html).toMatch(/<span class="human">.*admin<\/span>/); // human attribution
   });
 
   it("shows the ready queue excluding blocked issues", async () => {

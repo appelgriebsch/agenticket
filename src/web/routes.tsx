@@ -28,6 +28,7 @@ import {
   BlockedFlag,
   IssueRow,
   IssueTableHead,
+  KEY_TEXT,
   Labels,
   Layout,
   LoginLayout,
@@ -80,6 +81,23 @@ function formString(body: Record<string, unknown>, name: string): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+const PageHead = (props: { title: string; sub?: Child }) => (
+  <div class="mb-6 flex flex-wrap items-baseline gap-x-6 gap-y-2">
+    <h1 class="m-0 text-2xl font-bold tracking-tight">{props.title}</h1>
+    {props.sub ? <span class="text-gray-500 dark:text-gray-400">{props.sub}</span> : null}
+  </div>
+);
+
+const SectionTitle = (props: { children?: Child }) => (
+  <h2 class="mt-0 mb-3 border-b border-gray-200 pb-2 text-xs font-semibold tracking-wider text-gray-400 uppercase dark:border-gray-800 dark:text-gray-500">
+    {props.children}
+  </h2>
+);
+
+const EMPTY = "py-8 text-gray-400 dark:text-gray-500";
+const INLINE_FORM =
+  "mt-8 flex max-w-2xl flex-wrap items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900";
+
 export function createWeb(db: Db, version: string): Hono<WebEnv> {
   const web = new Hono<WebEnv>();
 
@@ -109,26 +127,30 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
 
   const LoginPage = (props: { error?: string; passwordMissing: boolean }) => (
     <LoginLayout>
-      <form class="loginbox" method="post" action="/login">
-        <h1>
-          <span class="agent" /> agenticket
+      <form
+        class="mx-auto mt-[15vh] grid w-full max-w-sm gap-4 rounded-xl border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+        method="post"
+        action="/login"
+      >
+        <h1 class="m-0 text-xl font-bold">
+          <span class="text-amber-500">⚡</span> agenticket
         </h1>
         {props.error ? <div class="notice error">{props.error}</div> : null}
         {props.passwordMissing ? (
-          <p class="hint">
-            No admin password is set. Run <code class="mono">agenticket admin set-password</code>{" "}
-            first, then log in here.
+          <p class="m-0 text-sm text-gray-500 dark:text-gray-400">
+            No admin password is set. Run{" "}
+            <code class="font-mono">agenticket admin set-password</code> first, then log in here.
           </p>
         ) : null}
         <input
-          class="ctl"
+          class="input w-full px-3 py-2 text-base"
           type="password"
           name="password"
           placeholder="admin password"
           aria-label="admin password"
           autofocus
         />
-        <button class="ctl primary" type="submit">
+        <button class="btn btn-primary justify-center px-3 py-2 text-base" type="submit">
           Log in
         </button>
       </form>
@@ -183,17 +205,15 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
     const error = c.req.query("error");
     return c.html(
       <Layout title="projects" active="projects" version={version}>
-        <div class="pagehead">
-          <h1>Projects</h1>
-          <span class="sub">
-            {projects.length === 1 ? "1 project" : `${projects.length} projects`}
-          </span>
-        </div>
+        <PageHead
+          title="Projects"
+          sub={projects.length === 1 ? "1 project" : `${projects.length} projects`}
+        />
         {error ? <div class="notice error">{error}</div> : null}
         {projects.length === 0 ? (
-          <p class="empty">No projects yet — create one below, or let an agent do it over MCP.</p>
+          <p class={EMPTY}>No projects yet — create one below, or let an agent do it over MCP.</p>
         ) : (
-          <div class="cards">
+          <div class="grid grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] gap-5">
             {projects.map((p) => {
               const issues = listIssues(db, { project: p.key, limit: 1000 });
               const counts = { todo: 0, active: 0, done: 0 };
@@ -203,26 +223,30 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
                 counts[cat] += 1;
               }
               return (
-                <div class="card">
-                  <h2>
-                    <a href={`/p/${p.key}`}>
-                      <span class="key mono">{p.key}</span> {p.name}
+                <div class="grid gap-1.5 rounded-lg border border-gray-200 bg-white p-5 shadow-xs dark:border-gray-800 dark:bg-gray-900">
+                  <h2 class="m-0 text-lg font-semibold">
+                    <a
+                      class="text-gray-900 hover:underline dark:text-gray-100"
+                      href={`/p/${p.key}`}
+                    >
+                      <span class={KEY_TEXT}>{p.key}</span> {p.name}
                     </a>
                   </h2>
                   {p.description ? (
-                    <p style="margin:0" class="sub">
-                      {p.description}
-                    </p>
+                    <p class="m-0 text-sm text-gray-500 dark:text-gray-400">{p.description}</p>
                   ) : null}
-                  <div class="counts">
-                    <span class="todo">
-                      <b>{counts.todo}</b> todo
+                  <div class="flex gap-5 text-sm text-gray-500 dark:text-gray-400">
+                    <span>
+                      <b class="font-semibold text-gray-900 dark:text-gray-100">{counts.todo}</b>{" "}
+                      todo
                     </span>
-                    <span class="active">
-                      <b>{counts.active}</b> active
+                    <span>
+                      <b class="font-semibold text-blue-600 dark:text-blue-400">{counts.active}</b>{" "}
+                      active
                     </span>
-                    <span class="done">
-                      <b>{counts.done}</b> done
+                    <span>
+                      <b class="font-semibold text-green-600 dark:text-green-400">{counts.done}</b>{" "}
+                      done
                     </span>
                   </div>
                 </div>
@@ -230,10 +254,16 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
             })}
           </div>
         )}
-        <form class="inlineform" method="post" action="/projects">
-          <input class="ctl mono" name="key" placeholder="KEY" size={6} maxlength={10} required />
-          <input class="ctl" name="name" placeholder="Project name" size={28} required />
-          <button class="ctl primary" type="submit">
+        <form class={INLINE_FORM} method="post" action="/projects">
+          <input
+            class="input w-24 font-mono"
+            name="key"
+            placeholder="KEY"
+            maxlength={10}
+            required
+          />
+          <input class="input w-72" name="name" placeholder="Project name" required />
+          <button class="btn btn-primary" type="submit">
             Create project
           </button>
         </form>
@@ -297,7 +327,7 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
             issue={issue}
             extra={
               p ? (
-                <span class="progress">
+                <span class="text-sm font-normal text-gray-400 dark:text-gray-500">
                   {" "}
                   {p.done} of {p.total} done
                 </span>
@@ -326,30 +356,28 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
           </>
         }
       >
-        <div class="pagehead">
-          <h1>{project.name}</h1>
-          <span class="sub">
-            {all.length} issues · {blockedCount} blocked
-          </span>
-        </div>
+        <PageHead title={project.name} sub={`${all.length} issues · ${blockedCount} blocked`} />
         <form method="get" action={`/p/${project.key}`}>
-          <div class="filterline mono">
-            <span class="gt">&gt;</span>
+          <div class="mb-7 flex max-w-4xl items-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2.5 font-mono focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-500/30 dark:border-gray-700 dark:bg-gray-900">
+            <span class="font-bold text-amber-500">&gt;</span>
             <input
+              class="min-w-40 flex-1 border-none bg-transparent text-base outline-none placeholder:text-gray-400 dark:placeholder:text-gray-600"
               name="f"
               value={filterLine}
               placeholder="status:open,in_progress label:mcp free text…"
               spellcheck={false}
               aria-label="filter"
             />
-            <span class="hint">status: kind: epic: assignee: label: + free text</span>
+            <span class="text-xs whitespace-nowrap text-gray-400 max-sm:hidden dark:text-gray-600">
+              status: kind: epic: assignee: label: + free text
+            </span>
           </div>
         </form>
         {filtered.length === 0 ? (
-          <p class="empty">No issues match.</p>
+          <p class={EMPTY}>No issues match.</p>
         ) : (
-          <div class="tablewrap">
-            <table class="issues">
+          <div class="overflow-x-auto">
+            <table class="w-full border-collapse">
               <IssueTableHead />
               <tbody>{rows}</tbody>
             </table>
@@ -380,26 +408,33 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
           <>
             /{" "}
             <b>
-              <a href={`/p/${issue.project}`}>{issue.project}</a>
+              <a class="hover:underline" href={`/p/${issue.project}`}>
+                {issue.project}
+              </a>
             </b>{" "}
             / {issue.key}
           </>
         }
       >
-        <div class="detailgrid">
+        <div class="grid grid-cols-1 items-start gap-x-16 gap-y-10 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <main>
-            <div class="issuehead">
-              <span class="key mono">{issue.key}</span>
-              <h1>{issue.title}</h1>
+            <div class="mb-2">
+              <span class="font-mono text-base text-gray-500 dark:text-gray-400">{issue.key}</span>
+              <h1 class="mt-1 mb-0 max-w-[40ch] text-2xl font-bold tracking-tight text-balance">
+                {issue.title}
+              </h1>
             </div>
-            <div class="headmeta">
+            <div class="mt-4 mb-8 flex flex-wrap items-center gap-x-4 gap-y-2">
               <StatusBadge status={issue.status} />
               <PriorityTag priority={issue.priority} />
               <BlockedFlag blockedBy={issue.blockedBy} />
               {epic ? (
-                <span class="crumb">
+                <span class="text-gray-500 dark:text-gray-400">
                   in epic{" "}
-                  <a href={`/i/${epic.key}`}>
+                  <a
+                    class="text-amber-700 hover:underline dark:text-amber-400"
+                    href={`/i/${epic.key}`}
+                  >
                     {epic.key} · {epic.title}
                   </a>
                 </span>
@@ -407,20 +442,27 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
             </div>
 
             {issue.description ? (
-              <section class="block">
-                <h2>Description</h2>
-                <pre class="desc">{issue.description}</pre>
+              <section class="mb-10">
+                <SectionTitle>Description</SectionTitle>
+                <pre class="m-0 max-w-[65ch] font-sans text-base leading-7 break-words whitespace-pre-wrap">
+                  {issue.description}
+                </pre>
               </section>
             ) : null}
 
             {issue.links.length > 0 ? (
-              <section class="block">
-                <h2>Links</h2>
-                <ul class="links">
+              <section class="mb-10">
+                <SectionTitle>Links</SectionTitle>
+                <ul class="m-0 grid list-none gap-2 p-0">
                   {issue.links.map((l) => (
-                    <li>
-                      <span class="ltype">{linkLabel(l.type, l.direction)}</span>
-                      <a class="mono" href={`/i/${l.otherKey}`}>
+                    <li class="flex flex-wrap items-baseline gap-4">
+                      <span class="w-32 text-sm text-gray-400 dark:text-gray-500">
+                        {linkLabel(l.type, l.direction)}
+                      </span>
+                      <a
+                        class="font-mono text-amber-700 hover:underline dark:text-amber-400"
+                        href={`/i/${l.otherKey}`}
+                      >
                         {l.otherKey}
                       </a>
                       <StatusBadge status={l.otherStatus} />
@@ -431,28 +473,36 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
               </section>
             ) : null}
 
-            <section class="block">
-              <h2>Activity</h2>
-              {issue.comments.length === 0 ? <p class="empty">No comments yet.</p> : null}
+            <section class="mb-10">
+              <SectionTitle>Activity</SectionTitle>
+              {issue.comments.length === 0 ? <p class={EMPTY}>No comments yet.</p> : null}
               {issue.comments.map((comment) => (
-                <div class={comment.authorType === "agent" ? "comment by-agent" : "comment"}>
-                  <div class="chead">
+                <div
+                  class={`mb-4 max-w-2xl rounded-lg border border-gray-200 bg-white px-5 py-4 dark:border-gray-800 dark:bg-gray-900 ${
+                    comment.authorType === "agent" ? "border-l-4 border-l-amber-400" : ""
+                  }`}
+                >
+                  <div class="mb-1 text-sm text-gray-500 dark:text-gray-400">
                     <ActorName type={comment.authorType} name={comment.authorName} />{" "}
-                    <time title={absTime(comment.createdAt)}>
+                    <time
+                      class="text-gray-400 dark:text-gray-500"
+                      title={absTime(comment.createdAt)}
+                    >
                       · {timeAgo(comment.createdAt)} ago
                     </time>
                   </div>
-                  <p>{comment.body}</p>
+                  <p class="m-0 leading-relaxed whitespace-pre-wrap">{comment.body}</p>
                 </div>
               ))}
-              <form class="commentbox" method="post" action={`/i/${issue.key}/comment`}>
+              <form class="mt-6 max-w-2xl" method="post" action={`/i/${issue.key}/comment`}>
                 <textarea
+                  class="input mb-3 block min-h-24 w-full resize-y px-4 py-3 text-base"
                   name="body"
                   placeholder="Write a comment…"
                   aria-label="comment"
                   required
                 />
-                <button class="ctl primary" type="submit">
+                <button class="btn btn-primary" type="submit">
                   Post comment
                 </button>
               </form>
@@ -460,11 +510,16 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
           </main>
 
           <aside>
-            <dl class="meta">
-              <dt>Status</dt>
-              <dd>
+            <dl class="m-0 grid grid-cols-[max-content_1fr] items-center gap-x-5 gap-y-3 rounded-lg border border-gray-200 bg-gray-50 p-5 text-sm dark:border-gray-800 dark:bg-gray-900">
+              <dt class="text-gray-400 dark:text-gray-500">Status</dt>
+              <dd class="m-0">
                 <form method="post" action={`/i/${issue.key}/update`}>
-                  <select class="ctl" name="status" aria-label="status" data-autosubmit>
+                  <select
+                    class="input cursor-pointer"
+                    name="status"
+                    aria-label="status"
+                    data-autosubmit
+                  >
                     {catalog.map((s) => (
                       <option value={s.name} selected={s.name === issue.status}>
                         {s.name}
@@ -472,16 +527,21 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
                     ))}
                   </select>{" "}
                   <noscript>
-                    <button class="ctl" type="submit">
+                    <button class="btn" type="submit">
                       set
                     </button>
                   </noscript>
                 </form>
               </dd>
-              <dt>Priority</dt>
-              <dd>
+              <dt class="text-gray-400 dark:text-gray-500">Priority</dt>
+              <dd class="m-0">
                 <form method="post" action={`/i/${issue.key}/update`}>
-                  <select class="ctl" name="priority" aria-label="priority" data-autosubmit>
+                  <select
+                    class="input cursor-pointer"
+                    name="priority"
+                    aria-label="priority"
+                    data-autosubmit
+                  >
                     {[0, 1, 2, 3, 4].map((p) => (
                       <option value={String(p)} selected={p === issue.priority}>
                         P{p}
@@ -489,34 +549,34 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
                     ))}
                   </select>{" "}
                   <noscript>
-                    <button class="ctl" type="submit">
+                    <button class="btn" type="submit">
                       set
                     </button>
                   </noscript>
                 </form>
               </dd>
-              <dt>Assignee</dt>
-              <dd>
+              <dt class="text-gray-400 dark:text-gray-500">Assignee</dt>
+              <dd class="m-0">
                 {issue.assignee ? (
                   <ActorName type={issue.assigneeType ?? "human"} name={issue.assignee} />
                 ) : (
                   "—"
                 )}
               </dd>
-              <dt>Labels</dt>
-              <dd>{issue.labels.length ? <Labels labels={issue.labels} /> : "—"}</dd>
-              <dt>Created</dt>
-              <dd class="key mono" title={absTime(issue.createdAt)}>
+              <dt class="text-gray-400 dark:text-gray-500">Labels</dt>
+              <dd class="m-0">{issue.labels.length ? <Labels labels={issue.labels} /> : "—"}</dd>
+              <dt class="text-gray-400 dark:text-gray-500">Created</dt>
+              <dd class={`m-0 ${KEY_TEXT}`} title={absTime(issue.createdAt)}>
                 {timeAgo(issue.createdAt)} ago
               </dd>
-              <dt>Updated</dt>
-              <dd class="key mono" title={absTime(issue.updatedAt)}>
+              <dt class="text-gray-400 dark:text-gray-500">Updated</dt>
+              <dd class={`m-0 ${KEY_TEXT}`} title={absTime(issue.updatedAt)}>
                 {timeAgo(issue.updatedAt)} ago
               </dd>
               {issue.closedAt ? (
                 <>
-                  <dt>Closed</dt>
-                  <dd class="key mono" title={absTime(issue.closedAt)}>
+                  <dt class="text-gray-400 dark:text-gray-500">Closed</dt>
+                  <dd class={`m-0 ${KEY_TEXT}`} title={absTime(issue.closedAt)}>
                     {timeAgo(issue.closedAt)} ago
                   </dd>
                 </>
@@ -555,13 +615,18 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
     const issues = readyWork(db, { project: selected || undefined, limit: 50 });
     return c.html(
       <Layout title="ready" active="ready" version={version}>
-        <div class="pagehead">
-          <h1>Ready work</h1>
-          <span class="sub">unblocked open issues, as agents see them (priority, then oldest)</span>
-        </div>
+        <PageHead
+          title="Ready work"
+          sub="unblocked open issues, as agents see them (priority, then oldest)"
+        />
         <form method="get" action="/ready">
-          <div class="filterline">
-            <select class="ctl" name="project" aria-label="project" data-autosubmit>
+          <div class="mb-7 flex items-center gap-3">
+            <select
+              class="input cursor-pointer"
+              name="project"
+              aria-label="project"
+              data-autosubmit
+            >
               <option value="">all projects</option>
               {projects.map((p) => (
                 <option value={p.key} selected={p.key === selected}>
@@ -570,17 +635,17 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
               ))}
             </select>
             <noscript>
-              <button class="ctl" type="submit">
+              <button class="btn" type="submit">
                 filter
               </button>
             </noscript>
           </div>
         </form>
         {issues.length === 0 ? (
-          <p class="empty">Nothing ready — everything is either done, blocked, or claimed.</p>
+          <p class={EMPTY}>Nothing ready — everything is either done, blocked, or claimed.</p>
         ) : (
-          <div class="tablewrap">
-            <table class="issues">
+          <div class="overflow-x-auto">
+            <table class="w-full border-collapse">
               <IssueTableHead />
               <tbody>
                 {issues.map((issue) => (
@@ -596,55 +661,60 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
 
   // --- token admin ---
 
+  const PLAIN_TH =
+    "border-b border-gray-200 pb-2 pr-6 text-left text-xs font-medium tracking-wider text-gray-400 uppercase dark:border-gray-800 dark:text-gray-500";
+  const PLAIN_TD = "border-b border-gray-100 py-3 pr-6 align-baseline dark:border-gray-800/80";
+
   const TokensPage = (props: { created?: { name: string; token: string }; error?: string }) => {
     const tokens = listTokens(db);
     return (
       <Layout title="tokens" active="tokens" version={version}>
-        <div class="pagehead">
-          <h1>Agent tokens</h1>
-          <span class="sub">bearer tokens for MCP and REST access</span>
-        </div>
+        <PageHead title="Agent tokens" sub="bearer tokens for MCP and REST access" />
         {props.error ? <div class="notice error">{props.error}</div> : null}
         {props.created ? (
           <div class="notice">
             Token <b>{props.created.name}</b> created — copy it now, it is shown only once:
-            <code class="token mono">{props.created.token}</code>
+            <code class="mt-2 block overflow-x-auto rounded-md border border-green-200 bg-white px-3 py-2 font-mono text-amber-700 select-all dark:border-green-500/20 dark:bg-gray-950 dark:text-amber-400">
+              {props.created.token}
+            </code>
           </div>
         ) : null}
         {tokens.length === 0 ? (
-          <p class="empty">No tokens yet.</p>
+          <p class={EMPTY}>No tokens yet.</p>
         ) : (
-          <table class="plain">
+          <table class="w-full max-w-4xl border-collapse">
             <thead>
               <tr>
-                <th>name</th>
-                <th>created</th>
-                <th>last used</th>
-                <th>status</th>
-                <th />
+                <th class={PLAIN_TH}>name</th>
+                <th class={PLAIN_TH}>created</th>
+                <th class={PLAIN_TH}>last used</th>
+                <th class={PLAIN_TH}>status</th>
+                <th class={PLAIN_TH} />
               </tr>
             </thead>
             <tbody>
               {tokens.map((t) => (
                 <tr>
-                  <td class={t.revokedAt ? "revoked" : undefined}>
-                    <span class="agent">{t.name}</span>
+                  <td
+                    class={`${PLAIN_TD} ${t.revokedAt ? "text-gray-400 line-through dark:text-gray-500" : ""}`}
+                  >
+                    <ActorName type="agent" name={t.name} />
                   </td>
-                  <td class="key mono">{absTime(t.createdAt)}</td>
-                  <td class="key mono">
+                  <td class={`${PLAIN_TD} ${KEY_TEXT}`}>{absTime(t.createdAt)}</td>
+                  <td class={`${PLAIN_TD} ${KEY_TEXT}`}>
                     {t.lastUsedAt ? `${timeAgo(t.lastUsedAt)} ago` : "never"}
                   </td>
-                  <td>
+                  <td class={PLAIN_TD}>
                     {t.revokedAt ? (
                       <span class="st st-cancelled">revoked</span>
                     ) : (
                       <span class="st st-done">active</span>
                     )}
                   </td>
-                  <td>
+                  <td class={PLAIN_TD}>
                     {t.revokedAt ? null : (
                       <form method="post" action={`/tokens/${t.id}/revoke`}>
-                        <button class="ctl danger" type="submit">
+                        <button class="btn btn-danger" type="submit">
                           revoke
                         </button>
                       </form>
@@ -655,15 +725,9 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
             </tbody>
           </table>
         )}
-        <form class="inlineform" method="post" action="/tokens">
-          <input
-            class="ctl"
-            name="name"
-            placeholder="token name (e.g. scout-1)"
-            size={28}
-            required
-          />
-          <button class="ctl primary" type="submit">
+        <form class={INLINE_FORM} method="post" action="/tokens">
+          <input class="input w-72" name="name" placeholder="token name (e.g. scout-1)" required />
+          <button class="btn btn-primary" type="submit">
             Create token
           </button>
         </form>

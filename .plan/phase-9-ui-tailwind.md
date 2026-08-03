@@ -29,14 +29,16 @@ Runtime must stay dependency-free and static-folder-free on BOTH Node and Bun:
 
 ## Tasks
 
-- [ ] Design pass + user sign-off on direction
-- [ ] Tailwind 4 build wiring (`app.css`, cli script, embed step, npm scripts)
-- [ ] Rework `src/web/ui.tsx` layout/components with Tailwind classes
-- [ ] Rework each page in `src/web/routes.tsx` (login, projects, issue list +
+- [x] Design pass + user sign-off on direction — **light + dark via
+      `prefers-color-scheme`, amber accent, standard/simple**
+- [x] Tailwind 4 build wiring (`app.css`, `scripts/embed-css.mjs` →
+      `src/web/app.css.gen.ts`, `npm run css:generate`)
+- [x] Rework `src/web/ui.tsx` layout/components with Tailwind classes
+- [x] Rework each page in `src/web/routes.tsx` (login, projects, issue list +
       epic tree, issue detail, ready queue, tokens)
-- [ ] Keep progressive-enhancement JS working (`/` filter, ctrl+enter)
-- [ ] Delete dead hand-rolled CSS from `src/web/assets.ts`
-- [ ] Update `.plan/PLAN.md` decision log (UI direction change supersedes the
+- [x] Keep progressive-enhancement JS working (`/` filter, ctrl+enter)
+- [x] Delete dead hand-rolled CSS from `src/web/assets.ts`
+- [x] Update `.plan/PLAN.md` decision log (UI direction change supersedes the
       phase-6 terminal-flavor decision)
 
 ## Out of scope
@@ -46,13 +48,28 @@ Runtime must stay dependency-free and static-folder-free on BOTH Node and Bun:
 
 ## Verification checklist
 
-- [ ] `npm test` (web tests updated), typecheck, lint, build green
-- [ ] Fresh checkout + `npm ci` + tests pass WITHOUT running Tailwind (generated
-      CSS is committed)
-- [ ] Live walkthrough of every page on Node; smoke on Bun
-- [ ] Works with JS disabled (forms-first preserved)
-- [ ] User reviews the new UI live and signs off
+- [x] `npm test` (72), typecheck, lint, build green
+- [x] Tests pass WITHOUT running Tailwind — `app.css.gen.ts` is committed and
+      the suite only imports the generated string
+- [x] Live walkthrough on Node (curl with session cookie: all 5 pages 200 with
+      new markup; badges, ⚡agent attribution, agent-comment accent border,
+      epic tint + tree + progress, derived blocked flag all present); Bun
+      smoke green (:3601)
+- [x] Works with JS disabled — forms + noscript submit buttons preserved
+- [ ] User reviews the new UI live and signs off ← **pending, stop point**
 
 ## Handoff
 
-(fill at phase end)
+- Stack: Tailwind 4 (`tailwindcss` + `@tailwindcss/cli` devDeps only).
+  `src/web/app.css` is the source (`@theme` fonts + `@layer components` for
+  `.btn/.input/.notice/.st-*/.pri-*/.agent/.human`); everything else is inline
+  utilities in `ui.tsx`/`routes.tsx`. `npm run css:generate` compiles+embeds;
+  the ~28 kB generated `src/web/app.css.gen.ts` is committed (build stays
+  `tsdown`, Docker/CI unchanged — they never run Tailwind).
+- Actor prefixes (⚡/@) moved from CSS `::before` into JSX so they exist in
+  the HTML text (better a11y/copy-paste); web.test.ts human-attribution
+  assertion loosened accordingly.
+- Enhancement JS filter-focus selector changed `.filterline input` →
+  `input[name=f]`.
+- Demo instance for review: `scratchpad/ui-demo`, port 3600, password
+  `demo-pass-123` (throwaway).
