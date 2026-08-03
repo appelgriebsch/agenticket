@@ -1,22 +1,36 @@
 # agenticket
 
-Agent-first issue tracker with a built-in MCP server. AI agents are the primary
-users (Streamable HTTP MCP at `POST /mcp`, REST under `/api/v1`); humans observe
-and manage via a terminal-styled web UI (coming in a later phase).
+**Agent-first issue tracker.** AI agents are the primary users — they plan,
+claim, link, and close issues over a built-in MCP server — while humans observe
+and manage through a dark, keyboard-friendly web UI. One process, one SQLite
+file, runs under Node and Bun.
 
-Full documentation lands in a later phase; for now, the quickest starts:
+- **MCP built in** — stateless Streamable HTTP endpoint at `POST /mcp`, 11 tools,
+  per-agent bearer tokens; every mutation is attributed to the token that made it.
+- **Dependency-aware** — `blocks` / `depends_on` links form a DAG (cycles
+  rejected); "blocked" is *derived* from open blockers, never a stale flag, and
+  `ready_work` hands agents the highest-priority unblocked issue.
+- **Structured enough, no more** — Projects → Epics → Issues, six fixed
+  statuses, five priorities, labels, comments.
+- **Trivial to run** — `npx agenticket start`, `bunx agenticket start`, or a
+  single container. Data is one SQLite database (WAL) in a directory you can
+  back up with `cp`.
 
-## Run with npx / bunx
+## Quickstart
+
+### npx / bunx
 
 ```sh
-npx agenticket start        # or: bunx agenticket start
-agenticket token create my-agent   # bearer token (agt_...) for MCP/REST
+npx agenticket start                 # daemon on 127.0.0.1:3547
+npx agenticket admin set-password    # for the web UI login
+npx agenticket token create my-agent # bearer token (agt_..., shown once)
 ```
 
-Data lives in `~/.local/share/agenticket` (override with `AGENTICKET_DATA_DIR`).
-Default bind: `127.0.0.1:3547`.
+Open http://localhost:3547, then connect your agent —
+[Claude Code](docs/install-claude-code.md) · [Codex](docs/install-codex.md) ·
+[any MCP client](docs/install-generic.md).
 
-## Run with Docker
+### Docker
 
 ```sh
 docker build -t agenticket:latest .
@@ -25,25 +39,105 @@ docker run -d --name agenticket -p 3547:3547 \
   -e AGENTICKET_ADMIN_PASSWORD=change-me \
   agenticket:latest
 
-curl localhost:3547/healthz
 docker exec agenticket bun bin/agenticket.js token create my-agent
 ```
 
-Or with compose (see `docker-compose.yml`):
+Or `docker compose up -d` (see `docker-compose.yml`). The image binds
+`0.0.0.0:3547` internally, stores everything in the `/data` volume, and
+`docker stop` shuts down gracefully (HTTP close → WAL checkpoint).
 
-```sh
-docker compose up -d
+## Teaching your agent the workflow
+
+[`skill/SKILL.md`](skill/SKILL.md) is a ready-made Claude Code skill teaching
+the loop: `ready_work` → claim (`update_issue` status/assignee) → narrate with
+`add_comment` → file & link discovered work → `close_issue` (which reports what
+got unblocked) → repeat. Install per the
+[Claude Code guide](docs/install-claude-code.md); for other harnesses, paste its
+conventions into your agent instructions.
+
+## CLI
+
+```text
+agenticket start [-p port] [-H host] [--foreground]   start (daemon by default)
+agenticket stop | restart | status                    manage the daemon
+agenticket config list | get <key> | set <key> <val>  config.json in the data dir
+agenticket token create|list|revoke <name>            agent bearer tokens
+agenticket admin set-password                         web UI login password
 ```
 
-Notes:
+Precedence for port/host: flags > `AGENTICKET_PORT`/`AGENTICKET_HOST` env >
+`config.json` > defaults (`127.0.0.1:3547`). Data lives in
+`~/.local/share/agenticket` (platform-dependent via env-paths); override with
+`AGENTICKET_DATA_DIR`.
 
-- The image binds `0.0.0.0:3547` inside the container and stores everything in
-  the `/data` volume (SQLite in WAL mode).
-- `AGENTICKET_ADMIN_PASSWORD` sets the human admin password on first boot only;
-  change it later with `docker exec agenticket bun bin/agenticket.js admin set-password`.
-- `docker stop` performs a graceful shutdown (HTTP close → WAL checkpoint).
+## MCP tools
 
-## MCP
+Endpoint: `POST /mcp`, header `Authorization: Bearer agt_...` — stateless, so
+any number of agents can work one instance concurrently.
 
-Point an MCP client at `http://localhost:3547/mcp` with header
-`Authorization: Bearer agt_...` (token from `agenticket token create`).
+| Tool | Purpose |
+|---|---|
+| `list_projects` / `create_project` | discover or create projects (key = issue prefix) |
+| `create_issue` | new issue or epic (`kind: "epic"`), with labels/priority/assignee |
+| `get_issue` | full detail: description, comments, links, derived `blockedBy` |
+| `update_issue` | partial update: status, priority, epic, assignee, labels |
+| `list_issues` | filter by project/status/kind/epic/assignee/labels/text |
+| `ready_work` | open, unblocked issues by priority then age — "what's next" |
+| `link_issues` / `unlink_issues` | `blocks`, `blocked_by`, `depends_on`, `relates_to`, `duplicates` |
+| `add_comment` | progress notes; the audit trail agents and humans read |
+| `close_issue` | done/cancelled + closing comment; returns newly `unblocked` keys |
+
+No delete tools on purpose: agents can close and cancel but never destroy the
+audit trail. Destructive deletes are admin-only (web UI / REST with a session).
+
+## REST API
+
+Everything the UI and MCP can do is also plain JSON under `/api/v1`, with the
+same two auth modes: `Authorization: Bearer agt_...` or the admin session
+cookie (`POST /api/v1/auth/login`).
+
+```text
+GET/POST        /api/v1/projects            GET/PATCH/DELETE /api/v1/projects/:key
+GET/POST        /api/v1/projects/:key/labels
+GET/POST        /api/v1/issues              GET/PATCH/DELETE /api/v1/issues/:key
+GET/POST        /api/v1/issues/:key/comments
+POST/DELETE     /api/v1/issues/:key/links
+GET             /api/v1/ready
+GET/POST        /api/v1/tokens              DELETE /api/v1/tokens/:id   (admin)
+```
+
+External surfaces always use issue keys (`AGT-42`); internal ids never leak.
+
+## Web UI
+
+Server-rendered, dark, fast — no SPA, works with JavaScript disabled. Pages:
+project overview, per-project issue list (command-line style filters, epics as
+trees, derived blocked flags), issue detail (status/priority controls, comments
+with ⚡agent / @human attribution), the ready queue as agents see it, and token
+admin (create shows the plaintext exactly once; revoke).
+
+## Self-hosting notes
+
+- Single process, single SQLite database in WAL mode; keep the whole data dir
+  on one filesystem and back it up by copying it (or point
+  [litestream](https://litestream.io) at the `.db` file for continuous
+  replication — in Docker that's the `/data` volume).
+- Bind stays `127.0.0.1` by default; put a TLS-terminating reverse proxy in
+  front if you expose it (`agenticket config set host 0.0.0.0` inside
+  containers/networks you trust).
+- Runs under Node ≥ 20 (better-sqlite3) and Bun (bun:sqlite) — the right driver
+  is picked at runtime.
+
+## Development
+
+```sh
+npm test             # vitest
+npm run typecheck    # tsc
+npm run lint         # biome
+npm run build        # tsdown → dist/
+npm run db:generate  # after editing src/db/schema.ts (regenerates embedded migrations)
+```
+
+The `.plan/` directory documents the phase-by-phase build process and decisions.
+
+MIT license.

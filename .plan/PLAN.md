@@ -13,8 +13,8 @@ single-container Docker image.
 
 ## Current phase
 
-**Phase 7 — Skill + Docs** (in progress; user pre-approved continuing past the
-phase 6 boundary in this session)
+**All phases complete** (v0.1.0). Next milestones are unplanned — candidates in
+the phase-7 handoff notes (publish to npm, push Docker image).
 
 ## Phase index
 
@@ -27,7 +27,7 @@ phase 6 boundary in this session)
 | 4 | [phase-4-cli-packaging.md](phase-4-cli-packaging.md) | ✅ done (2026-08-03) |
 | 5 | [phase-5-docker.md](phase-5-docker.md) | ✅ done (2026-08-03) |
 | 6 | [phase-6-web-ui.md](phase-6-web-ui.md) | ✅ done (2026-08-03) |
-| 7 | [phase-7-skill-docs.md](phase-7-skill-docs.md) | pending |
+| 7 | [phase-7-skill-docs.md](phase-7-skill-docs.md) | ✅ done (2026-08-03) |
 
 Work strictly one phase at a time. Each phase file has a goal, task list, out-of-scope
 list, and a verification checklist — a phase is done only when every verification item
@@ -103,11 +103,13 @@ passes. **Stop at the end of each phase for user review before starting the next
   issue detail (status/priority controls, comments with agent attribution),
   ready queue, token admin (create shows plaintext once, revoke). 62 tests total;
   live walkthrough verified on Node and smoke-tested on Bun.
+- **2026-08-03** Phase 7 complete: `skill/SKILL.md` (agent workflow skill),
+  install docs for Claude Code / Codex / generic MCP clients, full README,
+  skill+docs wired into the npm tarball, `scripts/smoke-skill.mjs` dogfood
+  (two concurrent MCP agents follow the skill loop end-to-end, audit trail
+  verified through the web UI; green under Node and Bun). Tagged v0.1.0.
 
 ## Handoff notes for next phase
 
-Phase 7 (Skill + Docs): see phase-7-skill-docs.md for the task list. Everything it
-documents now exists: CLI (phase 4), Docker (phase 5), REST (phase 2), MCP with 11
-tools (phase 3, `src/mcp/`), web UI (phase 6). MCP endpoint is `POST /mcp` with
-`Authorization: Bearer agt_...`; default port 3547. Dogfood verification needs a
-live instance + a fresh token + a Claude Code session with the skill installed.
+All planned phases are done. The publish checklist lives in the phase-7 handoff
+notes. If new work starts, add a phase file and update the index above first.
