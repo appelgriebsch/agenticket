@@ -38,3 +38,34 @@ jobs:
       - run: bun scripts/smoke-db.mjs
       - run: bun scripts/smoke-mcp.mjs
       - run: bash scripts/smoke-pack.sh
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t agenticket:ci .
+      - name: container smoke
+        run: |
+          set -euo pipefail
+          docker run -d --name agt -p 3547:3547 -v agt-data:/data \
+            -e AGENTICKET_ADMIN_PASSWORD=ci-test agenticket:ci
+          for i in $(seq 1 30); do
+            curl -sf localhost:3547/healthz && break || sleep 1
+          done
+          curl -sf localhost:3547/healthz | grep -q '"ok":true'
+          TOKEN=$(docker exec agt bun bin/agenticket.js token create smoke | grep -o 'agt_[A-Za-z0-9_-]*')
+          curl -sf -X POST localhost:3547/mcp \
+            -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+            -H "Accept: application/json, text/event-stream" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"create_project","arguments":{"key":"CI","name":"CI smoke"}}}' \
+            | grep -q '"CI"'
+          docker restart agt
+          for i in $(seq 1 30); do
+            curl -sf localhost:3547/healthz && break || sleep 1
+          done
+          curl -sf -X POST localhost:3547/mcp \
+            -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+            -H "Accept: application/json, text/event-stream" \
+            -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"list_projects","arguments":{}}}' \
+            | grep -q '"CI"'
+          docker rm -f agt

@@ -25,10 +25,10 @@ docker exec <ctr> bun bin/agenticket.js token create my-agent
 
 ## Tasks
 
-- [ ] `Dockerfile` (multi-stage, bun base)
-- [ ] `.dockerignore`
-- [ ] `docker-compose.yml` example in repo root (volume + env, for docs)
-- [ ] README section: docker quickstart (full docs phase 7)
+- [x] `Dockerfile` (multi-stage, bun base)
+- [x] `.dockerignore`
+- [x] `docker-compose.yml` example in repo root (volume + env, for docs)
+- [x] README section: docker quickstart (full docs phase 7)
 
 ## Verification checklist
 
@@ -43,4 +43,28 @@ docker restart agt-test && curl -s localhost:3547/healthz       # data survived
 
 ## Handoff notes
 
-_(fill in when phase completes)_
+_Completed 2026-08-03._ Full verification checklist ran locally (Docker 29):
+build → run → healthz → `token create` via `docker exec` → MCP `create_project`
+from host → `docker restart` → project still listed → HEALTHCHECK reports
+`healthy`. Image ~339 MB (bun-slim base + prod node_modules).
+
+Layout/conventions:
+
+- `Dockerfile` is two-stage on `oven/bun:1-slim`. Both stages install with
+  `--ignore-scripts` (mirrors bunx; better-sqlite3's postinstall never runs and
+  isn't needed — runtime uses `bun:sqlite`). Runtime stage: prod deps +
+  `dist/` + `bin/`, `CMD bun bin/agenticket.js start --foreground` as PID 1.
+- `ENV AGENTICKET_DATA_DIR=/data` (VOLUME) and `AGENTICKET_HOST=0.0.0.0` baked
+  in; port overridable via `AGENTICKET_PORT` (HEALTHCHECK reads it too — it's a
+  shell-form `bun -e` fetch, since the slim image has no curl).
+- No lockfile is copied into the image (repo has package-lock.json, not
+  bun.lock), so image builds resolve semver-fresh. Acceptable for now; pin
+  later if reproducibility matters.
+- CI: new `docker` job in `.github/workflows/ci.yml` runs the same smoke
+  (build, run, token, MCP call, restart-persistence).
+- `README.md` created with npx/bunx + docker quickstarts and an MCP pointer;
+  full docs remain phase 7.
+
+Phase 6 (web UI) notes: server binds fine behind docker; the UI phase only
+touches `src/` — remember `docker-compose.yml` at repo root is user-facing
+example config, keep it working.
