@@ -6,4 +6,5 @@ export * from "./labels.js";
 export * from "./links.js";
 export * from "./projects.js";
 export * from "./ready.js";
+export * from "./schemas.js";
 export * from "./statuses.js";

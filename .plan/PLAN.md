@@ -13,7 +13,7 @@ single-container Docker image.
 
 ## Current phase
 
-**Phase 2 — REST API + auth** (next up; awaiting user go-ahead)
+**Phase 3 — MCP endpoint** (next up; awaiting user go-ahead)
 
 ## Phase index
 
@@ -21,7 +21,7 @@ single-container Docker image.
 |---|---|---|
 | 0 | [phase-0-scaffolding.md](phase-0-scaffolding.md) | ✅ done (2026-08-03) |
 | 1 | [phase-1-db-domain.md](phase-1-db-domain.md) | ✅ done (2026-08-03) |
-| 2 | [phase-2-rest-api.md](phase-2-rest-api.md) | pending |
+| 2 | [phase-2-rest-api.md](phase-2-rest-api.md) | ✅ done (2026-08-03) |
 | 3 | [phase-3-mcp.md](phase-3-mcp.md) | pending |
 | 4 | [phase-4-cli-packaging.md](phase-4-cli-packaging.md) | pending |
 | 5 | [phase-5-docker.md](phase-5-docker.md) | pending |
@@ -68,11 +68,15 @@ passes. **Stop at the end of each phase for user review before starting the next
 - **2026-08-03** Phase 1 complete: schema + dual-driver connect + embedded migrations
   (as generated code, see decision below) + full domain layer, 15 tests green, WAL
   smoke passed on both runtimes.
+- **2026-08-03** Phase 2 complete: full `/api/v1` REST surface + session/bearer auth,
+  shared zod schemas in `src/domain/schemas.ts`, 21 new integration tests (36 total),
+  manual curl smoke green under Node and Bun.
 
 ## Handoff notes for next phase
 
-See "Handoff notes" in phase-1-db-domain.md — it lists the exact domain API surface,
-the DomainError→HTTP mapping, and the two deliberate deviations (embedded migrations,
-NULL-aware status seeding). Phase 2 builds Hono routes + auth on top of
-`src/domain/index.ts`; shared zod schemas go in `src/domain/schemas.ts` for reuse by
-MCP in phase 3.
+See "Handoff notes" in phase-2-rest-api.md — it maps the auth/api module layout,
+the error envelope, and API response conventions. Phase 3 (MCP) should: reuse the
+zod schemas from `src/domain/schemas.ts` for tool inputs, authenticate `POST /mcp`
+with the same bearer tokens via `authenticateToken` (`src/auth/tokens.ts`), and call
+domain functions directly (not the REST routes) with the agent Actor, mirroring how
+`src/api/routes.ts` does it.

@@ -25,20 +25,20 @@ GET    /healthz                                     (no auth)
 
 ## Tasks
 
-- [ ] `src/auth/password.ts` — scrypt (node:crypto, works on Bun) hash/verify;
+- [x] `src/auth/password.ts` — scrypt (node:crypto, works on Bun) hash/verify;
       admin password from settings table; bootstrap from `AGENTICKET_ADMIN_PASSWORD`
       env or CLI (phase 4) on first run
-- [ ] `src/auth/sessions.ts` — create/validate/expire sessions (30d), cookie
+- [x] `src/auth/sessions.ts` — create/validate/expire sessions (30d), cookie
       `agenticket_session`, HttpOnly, SameSite=Lax
-- [ ] `src/auth/tokens.ts` — generate (`agt_` + 32B base64url), sha256 lookup,
+- [x] `src/auth/tokens.ts` — generate (`agt_` + 32B base64url), sha256 lookup,
       revoke, last_used_at touch (throttled)
-- [ ] Auth middleware: accepts EITHER valid session cookie (actor = human/admin) OR
+- [x] Auth middleware: accepts EITHER valid session cookie (actor = human/admin) OR
       `Authorization: Bearer agt_...` (actor = agent w/ token name); attaches Actor
       to context; 401 envelope otherwise
-- [ ] Error envelope: `{error: {code, message}}`; zod-validated request bodies
+- [x] Error envelope: `{error: {code, message}}`; zod-validated request bodies
       (zod schemas shared with MCP in phase 3 — put them in `src/domain/schemas.ts`)
-- [ ] Routes as listed, calling domain functions only
-- [ ] Integration tests via `app.request()` covering auth paths, CRUD happy paths,
+- [x] Routes as listed, calling domain functions only
+- [x] Integration tests via `app.request()` covering auth paths, CRUD happy paths,
       validation errors, link cycle rejection through the API
 
 ## Out of scope
@@ -55,4 +55,37 @@ npm run typecheck && npm run lint
 
 ## Handoff notes
 
-_(fill in when phase completes)_
+**Completed 2026-08-03.** 36 tests green (21 new API integration tests);
+typecheck/lint/build clean. Manual curl smoke passed on BOTH runtimes
+(Node via tsx, Bun): login → token create → project → issue → get → ready.
+
+Layout:
+- `src/domain/schemas.ts` — zod schemas for every mutation body (strict objects:
+  unknown keys rejected). Re-exported from `src/domain/index.ts`; phase 3 MCP
+  tools should consume these directly.
+- `src/auth/{password,sessions,tokens}.ts` — scrypt admin password (settings key
+  `admin_password_hash`; `bootstrapAdminPassword` reads `AGENTICKET_ADMIN_PASSWORD`
+  on first run), 30d sessions (cookie `agenticket_session`), bearer tokens
+  (sha256 stored; `authenticateToken` touches last_used_at at most 1×/min).
+- `src/api/middleware.ts` — `authMiddleware(db)` sets `c.get("actor")` (`ApiEnv`
+  Hono env type); `requireAdmin` guards token routes + project/issue DELETE.
+- `src/api/routes.ts` — `createApi(db)` mounted at `/api/v1` by `createApp`
+  (`src/server.ts`, which now requires `{version, db}`). `onError` maps
+  DomainError not_found/validation/conflict → 404/400/409, ZodError → 400,
+  else 500; envelope `{error:{code,message}}`. 401 `unauthorized` / 403 `forbidden`.
+- `src/config.ts` — data dir resolution (env-paths, `AGENTICKET_DATA_DIR`
+  override); CLI `start` now opens the db, migrates, bootstraps the admin
+  password, and installs SIGINT/SIGTERM shutdown. Added `--db <path>` option.
+
+API behaviors phase 3+ should know:
+- Serializers strip internal ids: projects expose no `id`/`nextIssueNumber`;
+  comments expose `{id, body, authorType, authorName, createdAt}`. Issues are
+  domain `IssueDetail`/`IssueSummary` verbatim (already key-based).
+- PATCH `/issues/:key` with a done-category status routes through `closeIssue`
+  and the response gains an `unblocked: string[]` field.
+- Links: POST/DELETE `/issues/:key/links` take body `{to, type}`; `blocked_by`
+  accepted and stored inverted (response shows the stored direction).
+- List filters: `status` and `label` accept comma-separated values; `q` is text
+  search; `kind`, `epic`, `assignee`, `limit`, `offset` as expected.
+- DELETE `/tokens/:id` revokes (sets revoked_at) rather than deleting, so audit
+  references survive. Token plaintext is returned exactly once from POST.
