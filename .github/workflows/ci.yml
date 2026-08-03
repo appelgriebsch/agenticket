@@ -23,7 +23,10 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      # Build tooling (tsdown/rolldown) needs Node >=22; Node 20 legs verify
+      # runtime behavior only — publishes are built on Node 24 by release.yml.
       - run: npm run build
+        if: matrix.node-version != 20
       - run: npx tsx scripts/smoke-db.mjs
       - run: npx tsx scripts/smoke-mcp.mjs
       - run: npx tsx scripts/smoke-skill.mjs
