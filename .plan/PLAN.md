@@ -148,6 +148,15 @@ passes. **Stop at the end of each phase for user review before starting the next
   `scripts/embed-css.mjs` + committed `app.css.gen.ts`. 72 tests green;
   walkthrough on Node + Bun smoke. Awaiting user sign-off on the look.
 
+- **2026-08-04** **v0.2.2 released** (npm + GitHub) with phases 8+9. Two failed
+  release attempts first: v0.2.0 (Biome rejects Tailwind `@apply` — fixed with
+  `css.parser.tailwindDirectives`) and v0.2.1 (Biome formatter rejects the
+  generated `app.css.gen.ts` — now excluded; plus smoke-skill's UI marker
+  needed the new ⚡ prefix). Both dead tags remain on GitHub, never published.
+  Lesson recorded: before tagging, run the FULL verify job locally without
+  pipes (`lint; typecheck; test; build; all 6 smokes; smoke-pack`) — piping
+  lint output through `tail` had masked its exit code.
+
 ## Handoff notes for next phase
 
 All planned phases are done. The publish checklist lives in the phase-7 handoff
