@@ -68,12 +68,13 @@ jobs:
               -d "$1"
           }
           RESP=$(mcp '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"create_project","arguments":{"key":"CI","name":"CI smoke"}}}')
-          echo "$RESP" | grep -q '"CI"' || { echo "create_project response: $RESP"; fail; }
+          # Tool results are JSON inside an escaped text field, so match the plain substring.
+          echo "$RESP" | grep -q 'CI smoke' || { echo "create_project response: $RESP"; fail; }
           docker restart agt
           for i in $(seq 1 30); do
             curl -sf localhost:3547/healthz >/dev/null && break
             sleep 1
           done
           RESP=$(mcp '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"list_projects","arguments":{}}}')
-          echo "$RESP" | grep -q '"CI"' || { echo "list_projects response: $RESP"; fail; }
+          echo "$RESP" | grep -q 'CI smoke' || { echo "list_projects response: $RESP"; fail; }
           docker rm -f agt
