@@ -116,6 +116,12 @@ passes. **Stop at the end of each phase for user review before starting the next
   skill+docs wired into the npm tarball, `scripts/smoke-skill.mjs` dogfood
   (two concurrent MCP agents follow the skill loop end-to-end, audit trail
   verified through the web UI; green under Node and Bun). Tagged v0.1.0.
+- **2026-08-03** First working release shipped: **agenticket@0.1.1 on npm** via the
+  release workflow (v0.1.0 published but segfaulted on Node 20 — better-sqlite3 13;
+  superseded same day). CI made green end to end: npm@11 lockfile pin, docker smoke
+  grep fix (escaped MCP text), better-sqlite3 ^12.11.1, build step gated to Node
+  >=22. Verified from the public registry: `npx agenticket@0.1.1` on Node 20
+  (container) serves healthz + MCP tool calls; host start/stop clean.
 
 ## Handoff notes for next phase
 
