@@ -56,6 +56,14 @@ passes. **Stop at the end of each phase for user review before starting the next
   runtime. Forms-first (works without JS) + ~20-line progressive enhancement.
   Token plaintext is rendered directly into the create response, never a URL.
   `IssueSummary` now exposes `assigneeType`.
+- **2026-08-03** better-sqlite3 pinned to **^12.11.1**: v13 requires Node >=22 and
+  segfaults on Node 20 (npm doesn't enforce engines). Do not bump to 13 until the
+  project drops Node 20. v0.1.0 on npm shipped with 13 and is broken on Node 20;
+  fixed in v0.1.1.
+- **2026-08-03** Release automation: `.github/workflows/release.yml` on `v*` tags —
+  verify (both runtimes + all smokes + tag/version guard) → npm publish (NPM_TOKEN)
+  → GitHub release. CI + release pin npm@11 (lockfile format); docker smoke greps
+  for plain substrings because MCP tool results escape quotes inside `text`.
 - **2026-08-03** smoke-pack's Bun leg installs with `bun add --ignore-scripts` to mirror real `bunx`: better-sqlite3's postinstall never runs under Bun (plain `bun add` would fail on node-gyp), which is exactly the scenario the dynamic-driver rule protects.
 
 ## Standing rules (apply in every phase)

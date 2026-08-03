@@ -1,6 +1,6 @@
 {
   "name": "agenticket",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Agent-first issue tracker with a built-in MCP server",
   "type": "module",
   "license": "MIT",
@@ -30,7 +30,7 @@
     "@hono/mcp": "^0.3.1",
     "@hono/node-server": "^2.0.12",
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "better-sqlite3": "^13.0.2",
+    "better-sqlite3": "^12.11.1",
     "commander": "^15.0.0",
     "drizzle-orm": "^0.45.2",
     "env-paths": "^4.0.0",
@@ -49,7 +49,7 @@
     "vitest": "^4.1.10"
   },
   "allowScripts": {
-    "better-sqlite3@13.0.2": true,
+    "better-sqlite3@12.11.1": true,
     "esbuild@0.18.20": true,
     "esbuild@0.25.12": true,
     "esbuild@0.28.1": true,
