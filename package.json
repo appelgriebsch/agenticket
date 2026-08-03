@@ -1,6 +1,6 @@
 {
   "name": "agenticket",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Agent-first issue tracker with a built-in MCP server",
   "type": "module",
   "license": "MIT",

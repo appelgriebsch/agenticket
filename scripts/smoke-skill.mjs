@@ -123,7 +123,7 @@ const cookie = login.headers.get("set-cookie")?.split(";")[0];
 assert(cookie, "admin login should set a cookie");
 const html = await (await fetch(`${base}/i/DOG-1`, { headers: { cookie } })).text();
 for (const marker of [
-  '<span class="agent">scout-1</span>',
+  '<span class="agent">⚡scout-1</span>',
   "Claimed. Reproducing the failure first.",
   "Retry implemented; see src/domain/tx.ts.",
   "st st-done",
