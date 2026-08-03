@@ -23,10 +23,12 @@ file, runs under Node and Bun.
 ```sh
 npx agenticket start                 # daemon on 127.0.0.1:3547
 npx agenticket admin set-password    # for the web UI login
-npx agenticket token create my-agent # bearer token (agt_..., shown once)
+npx agenticket install claude        # connect Claude Code (mints a token, runs claude mcp add)
 ```
 
-Open http://localhost:3547, then connect your agent —
+`install codex` writes `~/.codex/config.toml` instead; `install json` prints an
+`mcpServers` block for any other harness (`token create <name>` still exists for
+manual setups). Open http://localhost:3547 and see the guides —
 [Claude Code](docs/install-claude-code.md) · [Codex](docs/install-codex.md) ·
 [any MCP client](docs/install-generic.md).
 
@@ -61,6 +63,7 @@ conventions into your agent instructions.
 agenticket start [-p port] [-H host] [--foreground]   start (daemon by default)
 agenticket stop | restart | status                    manage the daemon
 agenticket config list | get <key> | set <key> <val>  config.json in the data dir
+agenticket install claude|codex|json [--name] [--url] [--scope]  connect a coding agent
 agenticket token create|list|revoke <name>            agent bearer tokens
 agenticket admin set-password                         web UI login password
 ```

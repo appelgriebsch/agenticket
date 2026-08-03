@@ -13,8 +13,8 @@ single-container Docker image.
 
 ## Current phase
 
-**All phases complete** (v0.1.0). Next milestones are unplanned — candidates in
-the phase-7 handoff notes (publish to npm, push Docker image).
+**Phase 8 done, awaiting user review.** Phase 9 (Tailwind 4 UI refresh) is
+planned next; its design pass happens at phase start with the user.
 
 ## Phase index
 
@@ -28,6 +28,8 @@ the phase-7 handoff notes (publish to npm, push Docker image).
 | 5 | [phase-5-docker.md](phase-5-docker.md) | ✅ done (2026-08-03) |
 | 6 | [phase-6-web-ui.md](phase-6-web-ui.md) | ✅ done (2026-08-03) |
 | 7 | [phase-7-skill-docs.md](phase-7-skill-docs.md) | ✅ done (2026-08-03) |
+| 8 | [phase-8-install-command.md](phase-8-install-command.md) | ✅ done (2026-08-04) |
+| 9 | [phase-9-ui-tailwind.md](phase-9-ui-tailwind.md) | planned |
 
 Work strictly one phase at a time. Each phase file has a goal, task list, out-of-scope
 list, and a verification checklist — a phase is done only when every verification item
@@ -122,6 +124,14 @@ passes. **Stop at the end of each phase for user review before starting the next
   grep fix (escaped MCP text), better-sqlite3 ^12.11.1, build step gated to Node
   >=22. Verified from the public registry: `npx agenticket@0.1.1` on Node 20
   (container) serves healthz + MCP tool calls; host start/stop clean.
+
+- **2026-08-04** Phase 8 complete: `agenticket install claude|codex|json`
+  (`src/cli/install.ts`) — mints a token automatically, shells out to
+  `claude mcp add` (with manual fallback on failure), section-upserts
+  `~/.codex/config.toml` (honors `CODEX_HOME`), or prints a pipeable
+  `mcpServers` JSON block (JSON on stdout, notes on stderr). Default URL
+  prefers the running server's bound address from the pidfile. Docs + README
+  updated. 72 tests; live smoke on Node + Bun.
 
 ## Handoff notes for next phase
 

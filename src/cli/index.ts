@@ -24,6 +24,7 @@ import {
   stopDaemon,
   writePidFile,
 } from "./daemon.js";
+import { registerInstallCommand } from "./install.js";
 
 const program = new Command();
 
@@ -227,6 +228,8 @@ tokenCmd
       conn.close();
     }
   });
+
+registerInstallCommand(program, { dataDir, openDb });
 
 // Carries piped stdin between promptHidden calls (a single chunk may hold both lines).
 let pipedLeftover = "";

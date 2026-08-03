@@ -9,6 +9,13 @@ agenticket exposes a **stateless Streamable HTTP** MCP endpoint:
 - No session establishment required; every request is independent, so any
   number of agents can talk to one instance concurrently.
 
+Generate a ready-to-paste config (mints a token automatically; JSON goes to
+stdout, notes to stderr, so it pipes cleanly):
+
+```sh
+npx agenticket install json          # or: … install json > .mcp.json
+```
+
 Typical JSON client config (Cursor, Windsurf, and most `mcpServers`-style
 configs):
 

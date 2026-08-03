@@ -1,29 +1,29 @@
 # agenticket + Claude Code
 
-## 1. Run agenticket and mint a token
+## 1. Run agenticket
 
 ```sh
 npx agenticket start          # or bunx / docker, see the README
-npx agenticket token create my-agent
-# → agt_...   (shown exactly once)
 ```
 
-## 2. Add the MCP server
+## 2. Connect Claude Code (one command)
 
 ```sh
+npx agenticket install claude
+```
+
+This mints a fresh agent token and runs `claude mcp add` for you. Add
+`--scope project` (writes `.mcp.json`, shareable with your team) or
+`--scope user` (available everywhere); the default is local scope. Verify with
+`/mcp` inside Claude Code — you should see the 11 `agenticket` tools.
+
+If the `claude` CLI isn't on your PATH the command prints the manual
+equivalent instead:
+
+```sh
+npx agenticket token create my-agent   # → agt_... (shown exactly once)
 claude mcp add --transport http agenticket http://localhost:3547/mcp \
   --header "Authorization: Bearer agt_..."
-```
-
-Scope it to a project with `--scope project` (writes `.mcp.json`) or make it
-available everywhere with `--scope user`. Verify with `/mcp` inside Claude Code —
-you should see the 11 `agenticket` tools.
-
-If the header shouldn't live in config, use env expansion:
-
-```sh
-claude mcp add --transport http agenticket http://localhost:3547/mcp \
-  --header "Authorization: Bearer ${AGENTICKET_TOKEN}"
 ```
 
 ## 3. Install the skill (recommended)
