@@ -55,6 +55,13 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: create GitHub release
-        run: gh release create "$GITHUB_REF_NAME" --generate-notes
+        # Idempotent: a release may already exist if it was created manually
+        # from the GitHub UI (which is also what pushes the tag).
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "release $GITHUB_REF_NAME already exists — skipping"
+          else
+            gh release create "$GITHUB_REF_NAME" --generate-notes
+          fi
         env:
           GH_TOKEN: ${{ github.token }}
