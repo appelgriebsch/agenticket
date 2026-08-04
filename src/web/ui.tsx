@@ -1,5 +1,6 @@
 import type { Child, FC } from "hono/jsx";
 import type { IssueSummary } from "../domain/index.js";
+import { renderMarkdown } from "./markdown.js";
 
 /** Shared JSX building blocks for the web UI. Pure presentation, no db access. */
 
@@ -7,8 +8,14 @@ const NAV_LINK =
   "rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:text-foreground";
 const NAV_ACTIVE = "rounded-md bg-muted px-2.5 py-1.5 font-medium text-foreground";
 
+/** Rendered markdown body. The renderer escapes all input HTML, so the raw
+ * string it produces is safe to inject. */
+export const Markdown: FC<{ source: string }> = ({ source }) => (
+  <div class="md" dangerouslySetInnerHTML={{ __html: renderMarkdown(source) }} />
+);
+
 export const Kbd: FC<{ children?: Child }> = ({ children }) => (
-  <kbd class="rounded border border-border bg-muted px-1.5 py-px font-mono text-[11px] text-muted-foreground">
+  <kbd class="rounded border border-border bg-muted px-1.5 py-px font-mono text-xs text-muted-foreground">
     {children}
   </kbd>
 );
@@ -29,14 +36,14 @@ export const Layout: FC<{
     </head>
     <body>
       <header class="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur">
-        <div class="mx-auto flex h-12 max-w-6xl items-center gap-4 px-4 sm:px-6">
+        <div class="mx-auto flex h-14 w-full max-w-[96rem] items-center gap-4 px-4 sm:px-8">
           <a class="font-semibold tracking-tight text-foreground" href="/">
             agenticket
           </a>
           {crumb ? (
-            <span class="truncate font-mono text-xs text-muted-foreground">{crumb}</span>
+            <span class="truncate font-mono text-sm text-muted-foreground">{crumb}</span>
           ) : null}
-          <nav class="ml-auto flex items-center gap-1 text-sm">
+          <nav class="ml-auto flex items-center gap-1">
             <a class={active === "projects" ? NAV_ACTIVE : NAV_LINK} href="/">
               Projects
             </a>
@@ -54,7 +61,7 @@ export const Layout: FC<{
           </nav>
         </div>
       </header>
-      <div class="mx-auto max-w-6xl px-4 pt-6 pb-16 sm:px-6">
+      <div class="mx-auto w-full max-w-[96rem] px-4 pt-8 pb-16 sm:px-8">
         {children}
         <div class="mt-10 flex flex-wrap items-center gap-6 border-t border-border pt-4 text-xs text-muted-foreground">
           <span class="flex items-center gap-1.5">
@@ -105,7 +112,7 @@ export const ActorName: FC<{ type: string; name: string }> = ({ type, name }) =>
 export const Labels: FC<{ labels: string[] }> = ({ labels }) => (
   <>
     {labels.map((l) => (
-      <span class="mr-1 inline-block rounded-md border border-border bg-muted/50 px-1.5 py-px text-xs whitespace-nowrap text-muted-foreground">
+      <span class="mr-1 inline-block rounded-md border border-border bg-muted/50 px-1.5 py-px text-[13px] whitespace-nowrap text-muted-foreground">
         {l}
       </span>
     ))}
@@ -115,7 +122,7 @@ export const Labels: FC<{ labels: string[] }> = ({ labels }) => (
 export const BlockedFlag: FC<{ blockedBy: string[] }> = ({ blockedBy }) =>
   blockedBy.length === 0 ? null : (
     <span
-      class="text-xs font-medium whitespace-nowrap text-destructive"
+      class="text-[13px] font-medium whitespace-nowrap text-destructive"
       title={`blocked by ${blockedBy.join(", ")}`}
     >
       ⊘ blocked by {blockedBy.join(", ")}
@@ -134,8 +141,8 @@ export function absTime(ts: number): string {
   return `${new Date(ts).toISOString().replace("T", " ").slice(0, 16)} UTC`;
 }
 
-const CELL = "px-3 py-2 align-middle whitespace-nowrap";
-export const KEY_TEXT = "font-mono text-xs text-muted-foreground";
+const CELL = "px-4 py-2.5 align-middle whitespace-nowrap";
+export const KEY_TEXT = "font-mono text-sm text-muted-foreground";
 
 /** One issue row. `tree` renders the child connector for issues under an epic. */
 export const IssueRow: FC<{ issue: IssueSummary; tree?: "mid" | "last"; extra?: Child }> = ({
@@ -148,14 +155,14 @@ export const IssueRow: FC<{ issue: IssueSummary; tree?: "mid" | "last"; extra?: 
     <tr class="border-b border-border transition-colors last:border-0 hover:bg-muted/50">
       <td
         class={`${CELL} ${
-          epic ? "font-mono text-xs text-violet-600 dark:text-violet-400" : KEY_TEXT
+          epic ? "font-mono text-sm text-violet-600 dark:text-violet-400" : KEY_TEXT
         }`}
       >
         {issue.key}
       </td>
       <td class={`${CELL} w-full min-w-80 whitespace-normal`}>
         {tree ? (
-          <span class="font-mono text-xs text-muted-foreground/50">
+          <span class="font-mono text-sm text-muted-foreground/50">
             {tree === "last" ? "└─ " : "├─ "}
           </span>
         ) : null}
@@ -194,7 +201,7 @@ export const IssueRow: FC<{ issue: IssueSummary; tree?: "mid" | "last"; extra?: 
 };
 
 const TH =
-  "h-9 px-3 text-left align-middle text-xs font-medium whitespace-nowrap text-muted-foreground";
+  "h-10 px-4 text-left align-middle text-xs font-medium tracking-wide whitespace-nowrap text-muted-foreground";
 
 export const IssueTableHead: FC = () => (
   <thead>

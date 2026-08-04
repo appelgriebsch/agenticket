@@ -63,17 +63,17 @@
 
 @layer base {
   body {
-    @apply bg-background font-sans text-sm leading-normal text-foreground antialiased;
+    @apply bg-background font-sans text-base leading-normal text-foreground antialiased;
   }
 }
 
 @layer components {
-  /* form controls — compact shadcn sizing (h-8) */
+  /* form controls — shadcn sizing (h-9) */
   .input {
-    @apply h-8 rounded-md border border-input bg-transparent px-2.5 py-1 text-sm text-foreground shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none;
+    @apply h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none;
   }
   .btn {
-    @apply inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border border-input bg-background px-3 text-sm font-medium whitespace-nowrap text-foreground shadow-xs transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none;
+    @apply inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-input bg-background px-3.5 text-sm font-medium whitespace-nowrap text-foreground shadow-xs transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none;
   }
   .btn-primary {
     @apply border-transparent bg-primary text-primary-foreground shadow-xs hover:bg-primary/90;
@@ -89,7 +89,7 @@
 
   /* status badges — statuses arrive as st-<name>, a fixed set */
   .st {
-    @apply inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-0.5 text-xs font-medium whitespace-nowrap text-foreground;
+    @apply inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-0.5 text-[13px] font-medium whitespace-nowrap text-foreground;
   }
   .st::before {
     @apply size-1.5 rounded-full bg-muted-foreground content-[''];
@@ -112,7 +112,7 @@
 
   /* priorities — pri-0..pri-4 */
   .pri {
-    @apply text-xs font-medium text-muted-foreground;
+    @apply text-[13px] font-medium text-muted-foreground;
   }
   .pri-0 {
     @apply text-red-600 dark:text-red-400;
@@ -123,7 +123,7 @@
 
   /* notices — success by default, .error variant */
   .notice {
-    @apply mb-4 max-w-2xl rounded-lg border border-green-600/30 bg-green-500/5 px-4 py-3 text-sm text-green-700 dark:text-green-400;
+    @apply mb-4 rounded-lg border border-green-600/30 bg-green-500/5 px-4 py-3 text-sm text-green-700 dark:text-green-400;
   }
   .notice.error {
     @apply border-destructive/30 bg-destructive/5 text-destructive;
@@ -135,5 +135,56 @@
   }
   .human {
     @apply font-medium text-foreground;
+  }
+
+  /* rendered markdown (issue descriptions, comments) */
+  .md {
+    @apply leading-relaxed break-words;
+  }
+  .md > :first-child {
+    @apply mt-0;
+  }
+  .md > :last-child {
+    @apply mb-0;
+  }
+  .md p {
+    @apply my-2;
+  }
+  .md h1,
+  .md h2 {
+    @apply mt-5 mb-2 text-lg font-semibold tracking-tight;
+  }
+  .md h3,
+  .md h4,
+  .md h5,
+  .md h6 {
+    @apply mt-4 mb-1.5 text-base font-semibold;
+  }
+  .md ul {
+    @apply my-2 list-disc pl-5;
+  }
+  .md ol {
+    @apply my-2 list-decimal pl-5;
+  }
+  .md li {
+    @apply my-0.5;
+  }
+  .md code {
+    @apply rounded bg-muted px-1.5 py-0.5 font-mono text-[0.875em];
+  }
+  .md pre {
+    @apply my-3 overflow-x-auto rounded-md border border-border bg-muted/50 p-3;
+  }
+  .md pre code {
+    @apply block bg-transparent p-0 text-[13px] leading-relaxed;
+  }
+  .md a {
+    @apply font-medium text-foreground underline underline-offset-4 hover:text-muted-foreground;
+  }
+  .md blockquote {
+    @apply my-2 border-l-2 border-border pl-3 text-muted-foreground;
+  }
+  .md hr {
+    @apply my-4 border-border;
   }
 }

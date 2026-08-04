@@ -32,6 +32,7 @@ import {
   Labels,
   Layout,
   LoginLayout,
+  Markdown,
   PriorityTag,
   StatusBadge,
   timeAgo,
@@ -82,8 +83,8 @@ function formString(body: Record<string, unknown>, name: string): string {
 }
 
 const PageHead = (props: { title: string; sub?: Child }) => (
-  <div class="mb-5 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-    <h1 class="m-0 text-lg font-semibold tracking-tight">{props.title}</h1>
+  <div class="mb-6 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+    <h1 class="m-0 text-2xl font-semibold tracking-tight">{props.title}</h1>
     {props.sub ? <span class="text-sm text-muted-foreground">{props.sub}</span> : null}
   </div>
 );
@@ -94,8 +95,8 @@ const SectionTitle = (props: { children?: Child }) => (
   </h2>
 );
 
-const EMPTY = "py-6 text-sm text-muted-foreground";
-const INLINE_FORM = "card mt-6 flex max-w-2xl flex-wrap items-center gap-2 p-3";
+const EMPTY = "py-6 text-muted-foreground";
+const INLINE_FORM = "card mt-6 flex flex-wrap items-center gap-2 p-3";
 
 export function createWeb(db: Db, version: string): Hono<WebEnv> {
   const web = new Hono<WebEnv>();
@@ -132,7 +133,7 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
         action="/login"
       >
         <div class="grid gap-1">
-          <h1 class="m-0 text-lg font-semibold tracking-tight">agenticket</h1>
+          <h1 class="m-0 text-xl font-semibold tracking-tight">agenticket</h1>
           <p class="m-0 text-sm text-muted-foreground">Enter the admin password to continue.</p>
         </div>
         {props.error ? <div class="notice error">{props.error}</div> : null}
@@ -213,7 +214,7 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
         {projects.length === 0 ? (
           <p class={EMPTY}>No projects yet — create one below, or let an agent do it over MCP.</p>
         ) : (
-          <div class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-3">
+          <div class="grid grid-cols-[repeat(auto-fill,minmax(19rem,1fr))] gap-4">
             {projects.map((p) => {
               const issues = listIssues(db, { project: p.key, limit: 1000 });
               const counts = { todo: 0, active: 0, done: 0 };
@@ -223,16 +224,16 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
                 counts[cat] += 1;
               }
               return (
-                <div class="card grid gap-1.5 p-4 transition-colors hover:bg-muted/40">
-                  <h2 class="m-0 text-sm font-medium">
+                <div class="card grid gap-2 p-5 transition-colors hover:bg-muted/40">
+                  <h2 class="m-0 font-medium">
                     <a class="text-foreground hover:underline" href={`/p/${p.key}`}>
                       <span class={KEY_TEXT}>{p.key}</span> {p.name}
                     </a>
                   </h2>
                   {p.description ? (
-                    <p class="m-0 text-xs text-muted-foreground">{p.description}</p>
+                    <p class="m-0 text-sm text-muted-foreground">{p.description}</p>
                   ) : null}
-                  <div class="mt-1 flex gap-4 text-xs text-muted-foreground">
+                  <div class="mt-1 flex gap-5 text-sm text-muted-foreground">
                     <span>
                       <b class="font-semibold text-foreground">{counts.todo}</b> todo
                     </span>
@@ -323,7 +324,7 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
             issue={issue}
             extra={
               p ? (
-                <span class="text-xs font-normal text-muted-foreground">
+                <span class="text-sm font-normal text-muted-foreground">
                   {" "}
                   {p.done} of {p.total} done
                 </span>
@@ -354,9 +355,9 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
       >
         <PageHead title={project.name} sub={`${all.length} issues · ${blockedCount} blocked`} />
         <form method="get" action={`/p/${project.key}`}>
-          <div class="mb-4 flex max-w-2xl items-center gap-2">
+          <div class="mb-4 flex items-center gap-2">
             <input
-              class="input w-full flex-1 font-mono text-xs"
+              class="input w-full flex-1 font-mono text-sm"
               name="f"
               value={filterLine}
               placeholder="Filter: status:open,in_progress kind:epic assignee:name label:mcp free text…"
@@ -408,11 +409,11 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
           </>
         }
       >
-        <div class="grid grid-cols-1 items-start gap-x-10 gap-y-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <div class="grid grid-cols-1 items-start gap-x-12 gap-y-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <main>
             <div class="mb-1">
               <span class={KEY_TEXT}>{issue.key}</span>
-              <h1 class="mt-0.5 mb-0 max-w-[48ch] text-xl font-semibold tracking-tight text-balance">
+              <h1 class="mt-1 mb-0 text-3xl font-semibold tracking-tight text-balance">
                 {issue.title}
               </h1>
             </div>
@@ -421,7 +422,7 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
               <PriorityTag priority={issue.priority} />
               <BlockedFlag blockedBy={issue.blockedBy} />
               {epic ? (
-                <span class="text-xs text-muted-foreground">
+                <span class="text-sm text-muted-foreground">
                   in epic{" "}
                   <a
                     class="font-medium text-foreground underline-offset-4 hover:underline"
@@ -436,9 +437,7 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
             {issue.description ? (
               <section class="mb-8">
                 <SectionTitle>Description</SectionTitle>
-                <pre class="m-0 max-w-[70ch] font-sans text-sm leading-6 break-words whitespace-pre-wrap">
-                  {issue.description}
-                </pre>
+                <Markdown source={issue.description} />
               </section>
             ) : null}
 
@@ -448,17 +447,17 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
                 <ul class="m-0 grid list-none gap-1.5 p-0">
                   {issue.links.map((l) => (
                     <li class="flex flex-wrap items-center gap-3">
-                      <span class="w-24 text-xs text-muted-foreground">
+                      <span class="w-24 text-sm text-muted-foreground">
                         {linkLabel(l.type, l.direction)}
                       </span>
                       <a
-                        class="font-mono text-xs font-medium text-foreground hover:underline"
+                        class="font-mono text-sm font-medium text-foreground hover:underline"
                         href={`/i/${l.otherKey}`}
                       >
                         {l.otherKey}
                       </a>
                       <StatusBadge status={l.otherStatus} />
-                      <span class="text-sm">{l.otherTitle}</span>
+                      <span>{l.otherTitle}</span>
                     </li>
                   ))}
                 </ul>
@@ -470,20 +469,20 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
               {issue.comments.length === 0 ? <p class={EMPTY}>No comments yet.</p> : null}
               {issue.comments.map((comment) => (
                 <div
-                  class={`card mb-2 max-w-2xl px-4 py-3 ${
+                  class={`card mb-3 px-5 py-4 ${
                     comment.authorType === "agent" ? "border-l-2 border-l-amber-400" : ""
                   }`}
                 >
-                  <div class="mb-1 text-xs text-muted-foreground">
+                  <div class="mb-1.5 text-sm text-muted-foreground">
                     <ActorName type={comment.authorType} name={comment.authorName} />{" "}
                     <time class="text-muted-foreground/70" title={absTime(comment.createdAt)}>
                       · {timeAgo(comment.createdAt)} ago
                     </time>
                   </div>
-                  <p class="m-0 text-sm leading-relaxed whitespace-pre-wrap">{comment.body}</p>
+                  <Markdown source={comment.body} />
                 </div>
               ))}
-              <form class="mt-4 max-w-2xl" method="post" action={`/i/${issue.key}/comment`}>
+              <form class="mt-4" method="post" action={`/i/${issue.key}/comment`}>
                 <textarea
                   class="input mb-2 block h-auto min-h-20 w-full resize-y py-2"
                   name="body"
@@ -499,8 +498,8 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
           </main>
 
           <aside>
-            <dl class="card m-0 grid grid-cols-[max-content_1fr] items-center gap-x-4 gap-y-2.5 p-4 text-sm">
-              <dt class="text-xs text-muted-foreground">Status</dt>
+            <dl class="card m-0 grid grid-cols-[max-content_1fr] items-center gap-x-5 gap-y-3 p-5">
+              <dt class="text-sm text-muted-foreground">Status</dt>
               <dd class="m-0">
                 <form method="post" action={`/i/${issue.key}/update`}>
                   <select
@@ -522,7 +521,7 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
                   </noscript>
                 </form>
               </dd>
-              <dt class="text-xs text-muted-foreground">Priority</dt>
+              <dt class="text-sm text-muted-foreground">Priority</dt>
               <dd class="m-0">
                 <form method="post" action={`/i/${issue.key}/update`}>
                   <select
@@ -544,7 +543,7 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
                   </noscript>
                 </form>
               </dd>
-              <dt class="text-xs text-muted-foreground">Assignee</dt>
+              <dt class="text-sm text-muted-foreground">Assignee</dt>
               <dd class="m-0">
                 {issue.assignee ? (
                   <ActorName type={issue.assigneeType ?? "human"} name={issue.assignee} />
@@ -552,19 +551,19 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
                   "—"
                 )}
               </dd>
-              <dt class="text-xs text-muted-foreground">Labels</dt>
+              <dt class="text-sm text-muted-foreground">Labels</dt>
               <dd class="m-0">{issue.labels.length ? <Labels labels={issue.labels} /> : "—"}</dd>
-              <dt class="text-xs text-muted-foreground">Created</dt>
+              <dt class="text-sm text-muted-foreground">Created</dt>
               <dd class={`m-0 ${KEY_TEXT}`} title={absTime(issue.createdAt)}>
                 {timeAgo(issue.createdAt)} ago
               </dd>
-              <dt class="text-xs text-muted-foreground">Updated</dt>
+              <dt class="text-sm text-muted-foreground">Updated</dt>
               <dd class={`m-0 ${KEY_TEXT}`} title={absTime(issue.updatedAt)}>
                 {timeAgo(issue.updatedAt)} ago
               </dd>
               {issue.closedAt ? (
                 <>
-                  <dt class="text-xs text-muted-foreground">Closed</dt>
+                  <dt class="text-sm text-muted-foreground">Closed</dt>
                   <dd class={`m-0 ${KEY_TEXT}`} title={absTime(issue.closedAt)}>
                     {timeAgo(issue.closedAt)} ago
                   </dd>
@@ -651,8 +650,8 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
   // --- token admin ---
 
   const PLAIN_TH =
-    "h-9 px-3 text-left align-middle text-xs font-medium whitespace-nowrap text-muted-foreground";
-  const PLAIN_TD = "px-3 py-2 align-middle";
+    "h-10 px-4 text-left align-middle text-xs font-medium tracking-wide whitespace-nowrap text-muted-foreground";
+  const PLAIN_TD = "px-4 py-2.5 align-middle";
 
   const TokensPage = (props: { created?: { name: string; token: string }; error?: string }) => {
     const tokens = listTokens(db);
@@ -671,7 +670,7 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
         {tokens.length === 0 ? (
           <p class={EMPTY}>No tokens yet.</p>
         ) : (
-          <div class="card max-w-3xl overflow-x-auto">
+          <div class="card overflow-x-auto">
             <table class="w-full border-collapse">
               <thead>
                 <tr class="border-b border-border bg-muted/40">
