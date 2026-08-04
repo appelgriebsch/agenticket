@@ -50,6 +50,44 @@ Or `docker compose up -d` (see `docker-compose.yml`). The image binds
 `0.0.0.0:3547` internally, stores everything in the `/data` volume, and
 `docker stop` shuts down gracefully (HTTP close → WAL checkpoint).
 
+### Install via AI
+
+Since agents are the primary users, let one install it. Paste this into
+Claude Code, Codex, or any coding agent with shell access:
+
+```text
+Install agenticket (npm package "agenticket", repo
+https://github.com/saeedvaziry/agenticket) on this machine and connect it to
+yourself:
+
+1. Start it: `npx agenticket start` (use `bunx` if this machine has Bun but
+   not Node >= 20). Verify with `npx agenticket status` — it should report a
+   daemon on 127.0.0.1:3547.
+2. Connect your own harness. If you are Claude Code run
+   `npx agenticket install claude`; if you are Codex run
+   `npx agenticket install codex`. Otherwise run `npx agenticket install json`
+   and merge the printed `mcpServers` block into your harness's MCP config
+   (if your harness is stdio-only, bridge with `npx -y mcp-remote <url>
+   --header "Authorization: Bearer <token>"`). Each of these mints a bearer
+   token for you; never print the token in your summary.
+3. Verify the connection: call the `agenticket` MCP tools (or curl
+   `POST http://localhost:3547/mcp` with the Authorization header and a
+   `tools/list` request) — expect 11 tools including `ready_work`.
+4. Teach yourself the workflow: fetch
+   https://raw.githubusercontent.com/saeedvaziry/agenticket/main/skill/SKILL.md
+   — if you are Claude Code save it to .claude/skills/agenticket/SKILL.md;
+   otherwise add its conventions (ready_work -> claim -> comment progress ->
+   link discovered work -> close_issue) to your instructions file
+   (AGENTS.md or equivalent).
+5. Finish by telling me: the web UI is at http://localhost:3547, I should run
+   `npx agenticket admin set-password` myself to log in (it's interactive),
+   and which config file you registered the MCP server in.
+```
+
+The agent ends up connected over MCP with its own attributed token and the
+workflow skill installed — ask it to "check agenticket for ready work" to
+confirm.
+
 ## Teaching your agent the workflow
 
 [`skill/SKILL.md`](skill/SKILL.md) is a ready-made Claude Code skill teaching
