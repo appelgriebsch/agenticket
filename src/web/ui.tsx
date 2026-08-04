@@ -3,8 +3,15 @@ import type { IssueSummary } from "../domain/index.js";
 
 /** Shared JSX building blocks for the web UI. Pure presentation, no db access. */
 
-const NAV_LINK = "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100";
-const NAV_ACTIVE = "font-medium text-amber-600 dark:text-amber-400";
+const NAV_LINK =
+  "rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:text-foreground";
+const NAV_ACTIVE = "rounded-md bg-muted px-2.5 py-1.5 font-medium text-foreground";
+
+export const Kbd: FC<{ children?: Child }> = ({ children }) => (
+  <kbd class="rounded border border-border bg-muted px-1.5 py-px font-mono text-[11px] text-muted-foreground">
+    {children}
+  </kbd>
+);
 
 export const Layout: FC<{
   title: string;
@@ -21,42 +28,40 @@ export const Layout: FC<{
       <link rel="stylesheet" href="/assets/app.css" />
     </head>
     <body>
-      <div class="px-6 pt-6 pb-20 sm:px-10">
-        <header class="mb-8 flex flex-wrap items-baseline gap-x-8 gap-y-4 border-b border-gray-200 pb-4 dark:border-gray-800">
-          <a class="text-lg font-bold text-amber-600 dark:text-amber-400" href="/">
+      <header class="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur">
+        <div class="mx-auto flex h-12 max-w-6xl items-center gap-4 px-4 sm:px-6">
+          <a class="font-semibold tracking-tight text-foreground" href="/">
             agenticket
           </a>
           {crumb ? (
-            <span class="font-mono text-sm text-gray-500 dark:text-gray-400">{crumb}</span>
+            <span class="truncate font-mono text-xs text-muted-foreground">{crumb}</span>
           ) : null}
-          <nav class="ml-auto flex items-baseline gap-7">
+          <nav class="ml-auto flex items-center gap-1 text-sm">
             <a class={active === "projects" ? NAV_ACTIVE : NAV_LINK} href="/">
-              projects
+              Projects
             </a>
             <a class={active === "ready" ? NAV_ACTIVE : NAV_LINK} href="/ready">
-              ready
+              Ready
             </a>
             <a class={active === "tokens" ? NAV_ACTIVE : NAV_LINK} href="/tokens">
-              tokens
+              Tokens
             </a>
             <form class="inline" method="post" action="/logout">
-              <button class={`cursor-pointer hover:underline ${NAV_LINK}`} type="submit">
-                logout
+              <button class={`cursor-pointer ${NAV_LINK}`} type="submit">
+                Log out
               </button>
             </form>
           </nav>
-        </header>
+        </div>
+      </header>
+      <div class="mx-auto max-w-6xl px-4 pt-6 pb-16 sm:px-6">
         {children}
-        <div class="mt-8 flex flex-wrap gap-10 border-t border-gray-200 pt-4 text-sm text-gray-400 dark:border-gray-800 dark:text-gray-500">
-          <span>
-            <kbd class="rounded border border-gray-300 bg-gray-100 px-1.5 font-mono text-xs dark:border-gray-700 dark:bg-gray-800">
-              /
-            </kbd>{" "}
-            filter ·{" "}
-            <kbd class="rounded border border-gray-300 bg-gray-100 px-1.5 font-mono text-xs dark:border-gray-700 dark:bg-gray-800">
-              ctrl+enter
-            </kbd>{" "}
-            post comment
+        <div class="mt-10 flex flex-wrap items-center gap-6 border-t border-border pt-4 text-xs text-muted-foreground">
+          <span class="flex items-center gap-1.5">
+            <Kbd>/</Kbd> filter
+          </span>
+          <span class="flex items-center gap-1.5">
+            <Kbd>ctrl+enter</Kbd> post comment
           </span>
           <span class="ml-auto font-mono">v{version}</span>
         </div>
@@ -92,7 +97,7 @@ export const ActorName: FC<{ type: string; name: string }> = ({ type, name }) =>
     <span class="agent">⚡{name}</span>
   ) : (
     <span class="human">
-      <span class="font-normal text-gray-400 dark:text-gray-500">@</span>
+      <span class="font-normal text-muted-foreground">@</span>
       {name}
     </span>
   );
@@ -100,17 +105,17 @@ export const ActorName: FC<{ type: string; name: string }> = ({ type, name }) =>
 export const Labels: FC<{ labels: string[] }> = ({ labels }) => (
   <>
     {labels.map((l) => (
-      <span class="rounded bg-gray-100 px-2 py-0.5 text-xs whitespace-nowrap text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+      <span class="mr-1 inline-block rounded-md border border-border bg-muted/50 px-1.5 py-px text-xs whitespace-nowrap text-muted-foreground">
         {l}
       </span>
-    ))}{" "}
+    ))}
   </>
 );
 
 export const BlockedFlag: FC<{ blockedBy: string[] }> = ({ blockedBy }) =>
   blockedBy.length === 0 ? null : (
     <span
-      class="text-sm whitespace-nowrap text-red-600 dark:text-red-400"
+      class="text-xs font-medium whitespace-nowrap text-destructive"
       title={`blocked by ${blockedBy.join(", ")}`}
     >
       ⊘ blocked by {blockedBy.join(", ")}
@@ -129,9 +134,8 @@ export function absTime(ts: number): string {
   return `${new Date(ts).toISOString().replace("T", " ").slice(0, 16)} UTC`;
 }
 
-const CELL =
-  "border-b border-gray-100 py-3 pr-6 align-baseline whitespace-nowrap dark:border-gray-800/80";
-export const KEY_TEXT = "font-mono text-sm text-gray-500 dark:text-gray-400";
+const CELL = "px-3 py-2 align-middle whitespace-nowrap";
+export const KEY_TEXT = "font-mono text-xs text-muted-foreground";
 
 /** One issue row. `tree` renders the child connector for issues under an epic. */
 export const IssueRow: FC<{ issue: IssueSummary; tree?: "mid" | "last"; extra?: Child }> = ({
@@ -141,25 +145,23 @@ export const IssueRow: FC<{ issue: IssueSummary; tree?: "mid" | "last"; extra?: 
 }) => {
   const epic = issue.kind === "epic";
   return (
-    <tr
-      class={`group hover:bg-gray-50 dark:hover:bg-gray-900 ${
-        epic ? "bg-purple-50/60 dark:bg-purple-500/5" : ""
-      }`}
-    >
+    <tr class="border-b border-border transition-colors last:border-0 hover:bg-muted/50">
       <td
-        class={`${CELL} ${epic ? "font-mono text-sm text-purple-700 dark:text-purple-300" : KEY_TEXT}`}
+        class={`${CELL} ${
+          epic ? "font-mono text-xs text-violet-600 dark:text-violet-400" : KEY_TEXT
+        }`}
       >
         {issue.key}
       </td>
-      <td class={`${CELL} w-full min-w-88 whitespace-normal`}>
+      <td class={`${CELL} w-full min-w-80 whitespace-normal`}>
         {tree ? (
-          <span class="font-mono text-gray-300 dark:text-gray-600">
+          <span class="font-mono text-xs text-muted-foreground/50">
             {tree === "last" ? "└─ " : "├─ "}
           </span>
         ) : null}
         <a
           class={`font-medium hover:underline ${
-            epic ? "text-purple-700 dark:text-purple-300" : "text-gray-900 dark:text-gray-100"
+            epic ? "text-violet-700 dark:text-violet-400" : "text-foreground"
           }`}
           href={`/i/${issue.key}`}
         >
@@ -178,7 +180,7 @@ export const IssueRow: FC<{ issue: IssueSummary; tree?: "mid" | "last"; extra?: 
         {issue.assignee ? (
           <ActorName type={issue.assigneeType ?? "human"} name={issue.assignee} />
         ) : (
-          "—"
+          <span class="text-muted-foreground">—</span>
         )}
       </td>
       <td class={CELL}>
@@ -192,18 +194,18 @@ export const IssueRow: FC<{ issue: IssueSummary; tree?: "mid" | "last"; extra?: 
 };
 
 const TH =
-  "border-b border-gray-200 pb-2 pr-6 text-left text-xs font-medium tracking-wider text-gray-400 uppercase dark:border-gray-800 dark:text-gray-500";
+  "h-9 px-3 text-left align-middle text-xs font-medium whitespace-nowrap text-muted-foreground";
 
 export const IssueTableHead: FC = () => (
   <thead>
-    <tr>
-      <th class={TH}>key</th>
-      <th class={TH}>title</th>
-      <th class={TH}>status</th>
-      <th class={TH}>pri</th>
-      <th class={TH}>assignee</th>
-      <th class={TH}>labels</th>
-      <th class={TH}>updated</th>
+    <tr class="border-b border-border bg-muted/40">
+      <th class={TH}>Key</th>
+      <th class={TH}>Title</th>
+      <th class={TH}>Status</th>
+      <th class={TH}>Pri</th>
+      <th class={TH}>Assignee</th>
+      <th class={TH}>Labels</th>
+      <th class={TH}>Updated</th>
     </tr>
   </thead>
 );
