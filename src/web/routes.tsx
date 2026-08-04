@@ -506,14 +506,14 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
           </header>
 
           {issue.description ? (
-            <section class="issue-description mb-10 max-w-[72rem]">
+            <section class="issue-description mb-10">
               <SectionTitle>Description</SectionTitle>
               <Markdown source={issue.description} />
             </section>
           ) : null}
 
           {issue.links.length > 0 ? (
-            <section class="mb-10 max-w-[72rem]">
+            <section class="mb-10">
               <SectionTitle>Links</SectionTitle>
               <ul class="m-0 grid list-none gap-1.5 p-0">
                 {issue.links.map((l) => (
@@ -535,7 +535,7 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
             </section>
           ) : null}
 
-          <section class="mb-8 max-w-[72rem]">
+          <section class="mb-8">
             <SectionTitle>Activity</SectionTitle>
             {issue.comments.length === 0 ? <p class={EMPTY}>No comments yet.</p> : null}
             {issue.comments.map((comment) => (
