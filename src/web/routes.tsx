@@ -408,7 +408,7 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
           </>
         }
       >
-        <main class="max-w-[80rem]">
+        <main>
           <header class="mb-8">
             <div>
               <span class={KEY_TEXT}>{issue.key}</span>
