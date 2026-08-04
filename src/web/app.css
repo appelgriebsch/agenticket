@@ -187,4 +187,38 @@
   .md hr {
     @apply my-4 border-border;
   }
+
+  /* Larger long-form type on issue detail pages. */
+  .issue-description .md {
+    @apply text-2xl leading-relaxed;
+  }
+  .issue-description .md h1,
+  .issue-description .md h2 {
+    @apply mt-7 mb-3 text-3xl;
+  }
+  .issue-description .md h3,
+  .issue-description .md h4,
+  .issue-description .md h5,
+  .issue-description .md h6 {
+    @apply mt-6 mb-2 text-2xl;
+  }
+  .issue-description .md pre code {
+    @apply text-base;
+  }
+  .issue-comment .md {
+    @apply text-[1.375rem] leading-relaxed;
+  }
+  .issue-comment .md h1,
+  .issue-comment .md h2 {
+    @apply mt-6 mb-2 text-2xl;
+  }
+  .issue-comment .md h3,
+  .issue-comment .md h4,
+  .issue-comment .md h5,
+  .issue-comment .md h6 {
+    @apply mt-5 mb-2 text-xl;
+  }
+  .issue-comment .md pre code {
+    @apply text-base;
+  }
 }

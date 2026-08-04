@@ -33,7 +33,6 @@ import {
   Layout,
   LoginLayout,
   Markdown,
-  PriorityTag,
   StatusBadge,
   timeAgo,
 } from "./ui.js";
@@ -409,169 +408,165 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
           </>
         }
       >
-        <div class="grid grid-cols-1 items-start gap-x-12 gap-y-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
-          <main>
-            <div class="mb-1">
+        <main class="max-w-[80rem]">
+          <header class="mb-8">
+            <div>
               <span class={KEY_TEXT}>{issue.key}</span>
               <h1 class="mt-1 mb-0 text-3xl font-semibold tracking-tight text-balance">
                 {issue.title}
               </h1>
             </div>
-            <div class="mt-3 mb-6 flex flex-wrap items-center gap-x-3 gap-y-2">
-              <StatusBadge status={issue.status} />
-              <PriorityTag priority={issue.priority} />
-              <BlockedFlag blockedBy={issue.blockedBy} />
-              {epic ? (
-                <span class="text-sm text-muted-foreground">
-                  in epic{" "}
-                  <a
-                    class="font-medium text-foreground underline-offset-4 hover:underline"
-                    href={`/i/${epic.key}`}
-                  >
-                    {epic.key} · {epic.title}
-                  </a>
-                </span>
-              ) : null}
-            </div>
-
-            {issue.description ? (
-              <section class="mb-8">
-                <SectionTitle>Description</SectionTitle>
-                <Markdown source={issue.description} />
-              </section>
-            ) : null}
-
-            {issue.links.length > 0 ? (
-              <section class="mb-8">
-                <SectionTitle>Links</SectionTitle>
-                <ul class="m-0 grid list-none gap-1.5 p-0">
-                  {issue.links.map((l) => (
-                    <li class="flex flex-wrap items-center gap-3">
-                      <span class="w-24 text-sm text-muted-foreground">
-                        {linkLabel(l.type, l.direction)}
-                      </span>
-                      <a
-                        class="font-mono text-sm font-medium text-foreground hover:underline"
-                        href={`/i/${l.otherKey}`}
-                      >
-                        {l.otherKey}
-                      </a>
-                      <StatusBadge status={l.otherStatus} />
-                      <span>{l.otherTitle}</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ) : null}
-
-            <section class="mb-8">
-              <SectionTitle>Activity</SectionTitle>
-              {issue.comments.length === 0 ? <p class={EMPTY}>No comments yet.</p> : null}
-              {issue.comments.map((comment) => (
-                <div
-                  class={`card mb-3 px-5 py-4 ${
-                    comment.authorType === "agent" ? "border-l-2 border-l-amber-400" : ""
-                  }`}
+            <div class="mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-2 border-b border-border pb-5">
+              <form method="post" action={`/i/${issue.key}/update`}>
+                <select
+                  class="input cursor-pointer border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/40"
+                  name="status"
+                  aria-label="status"
+                  data-autosubmit
                 >
-                  <div class="mb-1.5 text-sm text-muted-foreground">
-                    <ActorName type={comment.authorType} name={comment.authorName} />{" "}
-                    <time class="text-muted-foreground/70" title={absTime(comment.createdAt)}>
-                      · {timeAgo(comment.createdAt)} ago
-                    </time>
-                  </div>
-                  <Markdown source={comment.body} />
-                </div>
-              ))}
-              <form class="mt-4" method="post" action={`/i/${issue.key}/comment`}>
-                <textarea
-                  class="input mb-2 block h-auto min-h-20 w-full resize-y py-2"
-                  name="body"
-                  placeholder="Write a comment…"
-                  aria-label="comment"
-                  required
-                />
-                <button class="btn btn-primary" type="submit">
-                  Post comment
-                </button>
+                  {catalog.map((s) => (
+                    <option value={s.name} selected={s.name === issue.status}>
+                      ● {s.name.replaceAll("_", " ")}
+                    </option>
+                  ))}
+                </select>{" "}
+                <noscript>
+                  <button class="btn" type="submit">
+                    set
+                  </button>
+                </noscript>
               </form>
-            </section>
-          </main>
-
-          <aside>
-            <dl class="card m-0 grid grid-cols-[max-content_1fr] items-center gap-x-5 gap-y-3 p-5">
-              <dt class="text-sm text-muted-foreground">Status</dt>
-              <dd class="m-0">
-                <form method="post" action={`/i/${issue.key}/update`}>
-                  <select
-                    class="input cursor-pointer"
-                    name="status"
-                    aria-label="status"
-                    data-autosubmit
-                  >
-                    {catalog.map((s) => (
-                      <option value={s.name} selected={s.name === issue.status}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>{" "}
-                  <noscript>
-                    <button class="btn" type="submit">
-                      set
-                    </button>
-                  </noscript>
-                </form>
-              </dd>
-              <dt class="text-sm text-muted-foreground">Priority</dt>
-              <dd class="m-0">
-                <form method="post" action={`/i/${issue.key}/update`}>
-                  <select
-                    class="input cursor-pointer"
-                    name="priority"
-                    aria-label="priority"
-                    data-autosubmit
-                  >
-                    {[0, 1, 2, 3, 4].map((p) => (
-                      <option value={String(p)} selected={p === issue.priority}>
-                        P{p}
-                      </option>
-                    ))}
-                  </select>{" "}
-                  <noscript>
-                    <button class="btn" type="submit">
-                      set
-                    </button>
-                  </noscript>
-                </form>
-              </dd>
-              <dt class="text-sm text-muted-foreground">Assignee</dt>
-              <dd class="m-0">
-                {issue.assignee ? (
-                  <ActorName type={issue.assigneeType ?? "human"} name={issue.assignee} />
-                ) : (
-                  "—"
-                )}
-              </dd>
-              <dt class="text-sm text-muted-foreground">Labels</dt>
-              <dd class="m-0">{issue.labels.length ? <Labels labels={issue.labels} /> : "—"}</dd>
-              <dt class="text-sm text-muted-foreground">Created</dt>
-              <dd class={`m-0 ${KEY_TEXT}`} title={absTime(issue.createdAt)}>
-                {timeAgo(issue.createdAt)} ago
-              </dd>
-              <dt class="text-sm text-muted-foreground">Updated</dt>
-              <dd class={`m-0 ${KEY_TEXT}`} title={absTime(issue.updatedAt)}>
-                {timeAgo(issue.updatedAt)} ago
-              </dd>
-              {issue.closedAt ? (
+              <form method="post" action={`/i/${issue.key}/update`}>
+                <select
+                  class="input cursor-pointer font-mono"
+                  name="priority"
+                  aria-label="priority"
+                  data-autosubmit
+                >
+                  {[0, 1, 2, 3, 4].map((p) => (
+                    <option value={String(p)} selected={p === issue.priority}>
+                      P{p}
+                    </option>
+                  ))}
+                </select>{" "}
+                <noscript>
+                  <button class="btn" type="submit">
+                    set
+                  </button>
+                </noscript>
+              </form>
+              <BlockedFlag blockedBy={issue.blockedBy} />
+              <span class="text-muted-foreground/40">·</span>
+              {issue.assignee ? (
+                <ActorName type={issue.assigneeType ?? "human"} name={issue.assignee} />
+              ) : (
+                <span class="text-sm text-muted-foreground">unassigned</span>
+              )}
+              {issue.labels.length ? (
                 <>
-                  <dt class="text-sm text-muted-foreground">Closed</dt>
-                  <dd class={`m-0 ${KEY_TEXT}`} title={absTime(issue.closedAt)}>
-                    {timeAgo(issue.closedAt)} ago
-                  </dd>
+                  <span class="text-muted-foreground/40">·</span>
+                  <span>
+                    <Labels labels={issue.labels} />
+                  </span>
                 </>
               ) : null}
-            </dl>
-          </aside>
-        </div>
+              <span class="text-muted-foreground/40">·</span>
+              <time
+                class="font-mono text-xs text-muted-foreground"
+                title={absTime(issue.createdAt)}
+              >
+                created {timeAgo(issue.createdAt)} ago
+              </time>
+              <time
+                class="font-mono text-xs text-muted-foreground"
+                title={absTime(issue.updatedAt)}
+              >
+                updated {timeAgo(issue.updatedAt)} ago
+              </time>
+              {issue.closedAt ? (
+                <time
+                  class="font-mono text-xs text-muted-foreground"
+                  title={absTime(issue.closedAt)}
+                >
+                  closed {timeAgo(issue.closedAt)} ago
+                </time>
+              ) : null}
+            </div>
+            {epic ? (
+              <div class="mt-3 text-sm text-muted-foreground">
+                in epic{" "}
+                <a
+                  class="font-medium text-foreground underline-offset-4 hover:underline"
+                  href={`/i/${epic.key}`}
+                >
+                  {epic.key} · {epic.title}
+                </a>
+              </div>
+            ) : null}
+          </header>
+
+          {issue.description ? (
+            <section class="issue-description mb-10 max-w-[72rem]">
+              <SectionTitle>Description</SectionTitle>
+              <Markdown source={issue.description} />
+            </section>
+          ) : null}
+
+          {issue.links.length > 0 ? (
+            <section class="mb-10 max-w-[72rem]">
+              <SectionTitle>Links</SectionTitle>
+              <ul class="m-0 grid list-none gap-1.5 p-0">
+                {issue.links.map((l) => (
+                  <li class="flex flex-wrap items-center gap-3">
+                    <span class="w-24 text-sm text-muted-foreground">
+                      {linkLabel(l.type, l.direction)}
+                    </span>
+                    <a
+                      class="font-mono text-sm font-medium text-foreground hover:underline"
+                      href={`/i/${l.otherKey}`}
+                    >
+                      {l.otherKey}
+                    </a>
+                    <StatusBadge status={l.otherStatus} />
+                    <span>{l.otherTitle}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          <section class="mb-8 max-w-[72rem]">
+            <SectionTitle>Activity</SectionTitle>
+            {issue.comments.length === 0 ? <p class={EMPTY}>No comments yet.</p> : null}
+            {issue.comments.map((comment) => (
+              <div
+                class={`issue-comment card mb-3 px-5 py-4 ${
+                  comment.authorType === "agent" ? "border-l-2 border-l-amber-400" : ""
+                }`}
+              >
+                <div class="mb-1.5 text-sm text-muted-foreground">
+                  <ActorName type={comment.authorType} name={comment.authorName} />{" "}
+                  <time class="text-muted-foreground/70" title={absTime(comment.createdAt)}>
+                    · {timeAgo(comment.createdAt)} ago
+                  </time>
+                </div>
+                <Markdown source={comment.body} />
+              </div>
+            ))}
+            <form class="mt-4" method="post" action={`/i/${issue.key}/comment`}>
+              <textarea
+                class="input mb-2 block h-auto min-h-24 w-full resize-y py-3 text-base"
+                name="body"
+                placeholder="Write a comment…"
+                aria-label="comment"
+                required
+              />
+              <button class="btn btn-primary" type="submit">
+                Post comment
+              </button>
+            </form>
+          </section>
+        </main>
       </Layout>,
     );
   });

@@ -144,6 +144,8 @@ describe("web pages", () => {
     expect(html).toContain("claimed via ready queue");
     expect(html).toContain("test-agent"); // comment author (token name)
     expect(html).toContain("Epic: hardening"); // epic breadcrumb
+    expect(html).toContain("issue-comment");
+    expect(html).not.toContain("<aside");
   });
 
   it("changes status and posts a comment via forms", async () => {
