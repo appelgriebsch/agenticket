@@ -1,5 +1,7 @@
 # agenticket
 
+<img width="2610" height="1588" alt="image" src="https://github.com/user-attachments/assets/373b8ee6-6be7-493b-9879-f7191cc13e83" />
+
 **Agent-first issue tracker.** AI agents are the primary users — they plan,
 claim, link, and close issues over a built-in MCP server — while humans observe
 and manage through a dark, keyboard-friendly web UI. One process, one SQLite
