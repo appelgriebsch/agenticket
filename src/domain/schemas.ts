@@ -50,6 +50,10 @@ export const issuePatchSchema = z.strictObject({
   removeLabels: z.array(z.string()).optional(),
 });
 
+export const issueBulkDeleteSchema = z.strictObject({
+  keys: z.array(z.string().min(1)).min(1).max(500),
+});
+
 export const commentCreateSchema = z.strictObject({
   body: z.string().min(1),
 });

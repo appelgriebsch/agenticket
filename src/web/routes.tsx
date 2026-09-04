@@ -9,8 +9,12 @@ import type { Db } from "../db/connect.js";
 import {
   type Actor,
   addComment,
+  createIssue,
   createProject,
   DomainError,
+  deleteIssue,
+  deleteIssues,
+  deleteProject,
   getIssue,
   getProject,
   getStatusCatalog,
@@ -19,7 +23,9 @@ import {
   listIssues,
   listProjects,
   readyWork,
+  type UpdateIssueInput,
   updateIssue,
+  updateProject,
 } from "../domain/index.js";
 import { APP_CSS, APP_JS } from "./assets.js";
 import {
@@ -79,6 +85,22 @@ export function parseFilterLine(line: string): Omit<ListIssuesFilter, "project">
 function formString(body: Record<string, unknown>, name: string): string {
   const value = body[name];
   return typeof value === "string" ? value.trim() : "";
+}
+
+function formStrings(body: Record<string, unknown>, name: string): string[] {
+  const value = body[name];
+  const values = Array.isArray(value) ? value : [value];
+  return values
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function commaList(value: string): string[] {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 const PageHead = (props: { title: string; sub?: Child }) => (
@@ -203,6 +225,7 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
     const projects = listProjects(db);
     const catalog = getStatusCatalog(db);
     const error = c.req.query("error");
+    const deleted = c.req.query("deleted");
     return c.html(
       <Layout title="projects" active="projects" version={version}>
         <PageHead
@@ -210,6 +233,9 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
           sub={projects.length === 1 ? "1 project" : `${projects.length} projects`}
         />
         {error ? <div class="notice error">{error}</div> : null}
+        {deleted ? (
+          <div class="notice">Deleted project {deleted} and all of its issues.</div>
+        ) : null}
         {projects.length === 0 ? (
           <p class={EMPTY}>No projects yet — create one below, or let an agent do it over MCP.</p>
         ) : (
@@ -224,11 +250,22 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
               }
               return (
                 <div class="card grid gap-2 p-5 transition-colors hover:bg-muted/40">
-                  <h2 class="m-0 font-medium">
-                    <a class="text-foreground hover:underline" href={`/p/${p.key}`}>
-                      <span class={KEY_TEXT}>{p.key}</span> {p.name}
-                    </a>
-                  </h2>
+                  <div class="flex items-start gap-3">
+                    <h2 class="m-0 min-w-0 flex-1 font-medium">
+                      <a class="text-foreground hover:underline" href={`/p/${p.key}`}>
+                        <span class={KEY_TEXT}>{p.key}</span> {p.name}
+                      </a>
+                    </h2>
+                    <form
+                      method="post"
+                      action={`/p/${p.key}/delete`}
+                      data-confirm={`Delete project ${p.key} and all ${issues.length} of its issues? This cannot be undone.`}
+                    >
+                      <button class="btn btn-danger h-7 px-2.5" type="submit">
+                        Delete
+                      </button>
+                    </form>
+                  </div>
                   {p.description ? (
                     <p class="m-0 text-sm text-muted-foreground">{p.description}</p>
                   ) : null}
@@ -259,6 +296,11 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
             required
           />
           <input class="input w-64" name="name" placeholder="Project name" required />
+          <input
+            class="input min-w-64 flex-1"
+            name="description"
+            placeholder="Description (optional)"
+          />
           <button class="btn btn-primary" type="submit">
             Create project
           </button>
@@ -273,6 +315,7 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
       const project = createProject(db, c.get("actor"), {
         key: formString(body, "key"),
         name: formString(body, "name"),
+        description: formString(body, "description") || undefined,
       });
       return c.redirect(`/p/${project.key}`, 303);
     } catch (err) {
@@ -281,6 +324,12 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
       }
       throw err;
     }
+  });
+
+  web.post("/p/:key/delete", (c) => {
+    const project = getProject(db, c.req.param("key"));
+    deleteProject(db, c.get("actor"), project.key);
+    return c.redirect(`/?deleted=${encodeURIComponent(project.key)}`, 303);
   });
 
   // --- issue list ---
@@ -292,6 +341,8 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
     const filtered = listIssues(db, { ...filter, project: project.key, limit: 500 });
     const all = listIssues(db, { project: project.key, limit: 1000 });
     const catalog = getStatusCatalog(db);
+    const error = c.req.query("error");
+    const deleted = c.req.query("deleted");
 
     // Epic progress over ALL children, not just the filtered ones.
     const progress = new Map<string, { done: number; total: number }>();
@@ -321,6 +372,7 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
         rows.push(
           <IssueRow
             issue={issue}
+            selectable
             extra={
               p ? (
                 <span class="text-sm font-normal text-muted-foreground">
@@ -333,10 +385,16 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
         );
         const children = childrenOf.get(issue.key) ?? [];
         children.forEach((child, idx) => {
-          rows.push(<IssueRow issue={child} tree={idx === children.length - 1 ? "last" : "mid"} />);
+          rows.push(
+            <IssueRow
+              issue={child}
+              tree={idx === children.length - 1 ? "last" : "mid"}
+              selectable
+            />,
+          );
         });
       } else if (!(issue.epic && epicKeys.has(issue.epic))) {
-        rows.push(<IssueRow issue={issue} />);
+        rows.push(<IssueRow issue={issue} selectable />);
       }
     }
 
@@ -353,6 +411,12 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
         }
       >
         <PageHead title={project.name} sub={`${all.length} issues · ${blockedCount} blocked`} />
+        {error ? <div class="notice error">{error}</div> : null}
+        {deleted ? (
+          <div class="notice">
+            Deleted {deleted} {deleted === "1" ? "issue" : "issues"}.
+          </div>
+        ) : null}
         <form method="get" action={`/p/${project.key}`}>
           <div class="mb-4 flex items-center gap-2">
             <input
@@ -368,21 +432,186 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
         {filtered.length === 0 ? (
           <p class={EMPTY}>No issues match.</p>
         ) : (
-          <div class="card overflow-x-auto">
-            <table class="w-full border-collapse">
-              <IssueTableHead />
-              <tbody>{rows}</tbody>
-            </table>
-          </div>
+          <form method="post" action={`/p/${project.key}/issues/delete`} data-bulk-delete>
+            <input type="hidden" name="f" value={filterLine} />
+            <div
+              class="mb-3 flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/40 px-4 py-2"
+              data-selection-toolbar
+            >
+              <span class="text-sm text-muted-foreground" aria-live="polite">
+                <b class="font-semibold text-foreground" data-selection-count>
+                  0
+                </b>{" "}
+                selected
+              </span>
+              <button class="btn btn-danger" type="submit">
+                Delete selected
+              </button>
+            </div>
+            <div class="card overflow-x-auto">
+              <table class="w-full border-collapse">
+                <IssueTableHead selectable />
+                <tbody>{rows}</tbody>
+              </table>
+            </div>
+          </form>
         )}
+        <div class="mt-6 grid gap-4 lg:grid-cols-2">
+          <details class="card p-4">
+            <summary class="cursor-pointer font-medium">Create issue</summary>
+            <form class="mt-4 grid gap-3" method="post" action={`/p/${project.key}/issues`}>
+              <input class="input w-full" name="title" placeholder="Issue title" required />
+              <textarea
+                class="input block h-auto min-h-24 w-full resize-y py-3"
+                name="description"
+                placeholder="Description (optional)"
+              />
+              <div class="flex flex-wrap gap-2">
+                <select class="input cursor-pointer" name="kind" aria-label="issue kind">
+                  <option value="issue">Issue</option>
+                  <option value="epic">Epic</option>
+                </select>
+                <select
+                  class="input cursor-pointer font-mono"
+                  name="priority"
+                  aria-label="priority"
+                >
+                  {[0, 1, 2, 3, 4].map((priority) => (
+                    <option value={String(priority)} selected={priority === 2}>
+                      P{priority}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  class="input min-w-44 flex-1"
+                  name="epic"
+                  placeholder="Epic key (optional)"
+                />
+                <input
+                  class="input min-w-44 flex-1"
+                  name="assignee"
+                  placeholder="Assignee (optional)"
+                />
+              </div>
+              <input class="input w-full" name="labels" placeholder="Labels, comma separated" />
+              <div>
+                <button class="btn btn-primary" type="submit">
+                  Create issue
+                </button>
+              </div>
+            </form>
+          </details>
+
+          <details class="card p-4">
+            <summary class="cursor-pointer font-medium">Project settings</summary>
+            <form class="mt-4 grid gap-3" method="post" action={`/p/${project.key}/update`}>
+              <label class="grid gap-1 text-sm">
+                <span class="text-muted-foreground">Name</span>
+                <input class="input w-full" name="name" value={project.name} required />
+              </label>
+              <label class="grid gap-1 text-sm">
+                <span class="text-muted-foreground">Description</span>
+                <textarea
+                  class="input block h-auto min-h-20 w-full resize-y py-3"
+                  name="description"
+                >
+                  {project.description ?? ""}
+                </textarea>
+              </label>
+              <div>
+                <button class="btn btn-primary" type="submit">
+                  Save project
+                </button>
+              </div>
+            </form>
+            <div class="mt-5 border-t border-border pt-4">
+              <form
+                method="post"
+                action={`/p/${project.key}/delete`}
+                data-confirm={`Delete project ${project.key} and all ${all.length} of its issues? This cannot be undone.`}
+              >
+                <button class="btn btn-danger" type="submit">
+                  Delete project and issues
+                </button>
+              </form>
+            </div>
+          </details>
+        </div>
       </Layout>,
     );
+  });
+
+  web.post("/p/:key/update", async (c) => {
+    const project = getProject(db, c.req.param("key"));
+    const body = await c.req.parseBody();
+    try {
+      updateProject(db, c.get("actor"), project.key, {
+        name: formString(body, "name"),
+        description: formString(body, "description") || null,
+      });
+      return c.redirect(`/p/${project.key}`, 303);
+    } catch (err) {
+      if (err instanceof DomainError) {
+        return c.redirect(`/p/${project.key}?error=${encodeURIComponent(err.message)}`, 303);
+      }
+      throw err;
+    }
+  });
+
+  web.post("/p/:key/issues", async (c) => {
+    const project = getProject(db, c.req.param("key"));
+    const body = await c.req.parseBody();
+    try {
+      const issue = createIssue(db, c.get("actor"), {
+        project: project.key,
+        title: formString(body, "title"),
+        description: formString(body, "description") || undefined,
+        kind: formString(body, "kind") === "epic" ? "epic" : "issue",
+        epic: formString(body, "epic") || undefined,
+        priority: Number(formString(body, "priority") || "2"),
+        assignee: formString(body, "assignee") || undefined,
+        labels: commaList(formString(body, "labels")),
+      });
+      return c.redirect(`/i/${issue.key}`, 303);
+    } catch (err) {
+      if (err instanceof DomainError) {
+        return c.redirect(`/p/${project.key}?error=${encodeURIComponent(err.message)}`, 303);
+      }
+      throw err;
+    }
+  });
+
+  web.post("/p/:key/issues/delete", async (c) => {
+    const project = getProject(db, c.req.param("key"));
+    const body = await c.req.parseBody({ all: true });
+    const keys = formStrings(body, "issues");
+    const filterLine = formString(body, "f");
+    const redirectWith = (name: "deleted" | "error", value: string) => {
+      const query = new URLSearchParams();
+      if (filterLine) query.set("f", filterLine);
+      query.set(name, value);
+      return c.redirect(`/p/${project.key}?${query.toString()}`, 303);
+    };
+
+    try {
+      for (const key of keys) {
+        if (getIssue(db, key).project !== project.key) {
+          throw new DomainError("validation", `issue "${key}" does not belong to ${project.key}`);
+        }
+      }
+      const deleted = deleteIssues(db, c.get("actor"), keys);
+      return redirectWith("deleted", String(deleted.length));
+    } catch (err) {
+      if (err instanceof DomainError) return redirectWith("error", err.message);
+      throw err;
+    }
   });
 
   // --- issue detail ---
 
   web.get("/i/:key", (c) => {
     const issue = getIssue(db, c.req.param("key"));
+    const error = c.req.query("error");
     const catalog = [...getStatusCatalog(db).values()].sort((a, b) => a.sortOrder - b.sortOrder);
     const epic = issue.epic ? getIssue(db, issue.epic) : null;
     const linkLabel = (type: string, direction: "out" | "in"): string => {
@@ -409,12 +638,24 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
         }
       >
         <main>
+          {error ? <div class="notice error">{error}</div> : null}
           <header class="mb-8">
-            <div>
-              <span class={KEY_TEXT}>{issue.key}</span>
-              <h1 class="mt-1 mb-0 text-3xl font-semibold tracking-tight text-balance">
-                {issue.title}
-              </h1>
+            <div class="flex items-start gap-4">
+              <div class="min-w-0 flex-1">
+                <span class={KEY_TEXT}>{issue.key}</span>
+                <h1 class="mt-1 mb-0 text-3xl font-semibold tracking-tight text-balance">
+                  {issue.title}
+                </h1>
+              </div>
+              <form
+                method="post"
+                action={`/i/${issue.key}/delete`}
+                data-confirm={`Delete ${issue.key}? Its comments and links will also be deleted. This cannot be undone.`}
+              >
+                <button class="btn btn-danger" type="submit">
+                  Delete
+                </button>
+              </form>
             </div>
             <div class="mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-2 border-b border-border pb-5">
               <form method="post" action={`/i/${issue.key}/update`}>
@@ -512,6 +753,50 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
             </section>
           ) : null}
 
+          <details class="card mb-10 p-4">
+            <summary class="cursor-pointer font-medium">Edit issue</summary>
+            <form class="mt-4 grid gap-3" method="post" action={`/i/${issue.key}/update`}>
+              <label class="grid gap-1 text-sm">
+                <span class="text-muted-foreground">Title</span>
+                <input class="input w-full" name="title" value={issue.title} required />
+              </label>
+              <label class="grid gap-1 text-sm">
+                <span class="text-muted-foreground">Description</span>
+                <textarea
+                  class="input block h-auto min-h-32 w-full resize-y py-3"
+                  name="description"
+                >
+                  {issue.description ?? ""}
+                </textarea>
+              </label>
+              <div class="grid gap-3 md:grid-cols-3">
+                <label class="grid gap-1 text-sm">
+                  <span class="text-muted-foreground">Assignee</span>
+                  <input class="input w-full" name="assignee" value={issue.assignee ?? ""} />
+                </label>
+                <label class="grid gap-1 text-sm">
+                  <span class="text-muted-foreground">Epic</span>
+                  <input
+                    class="input w-full font-mono"
+                    name="epic"
+                    value={issue.epic ?? ""}
+                    placeholder={issue.kind === "epic" ? "Epics cannot have a parent" : "None"}
+                    disabled={issue.kind === "epic"}
+                  />
+                </label>
+                <label class="grid gap-1 text-sm">
+                  <span class="text-muted-foreground">Labels</span>
+                  <input class="input w-full" name="labels" value={issue.labels.join(", ")} />
+                </label>
+              </div>
+              <div>
+                <button class="btn btn-primary" type="submit">
+                  Save changes
+                </button>
+              </div>
+            </form>
+          </details>
+
           {issue.links.length > 0 ? (
             <section class="mb-10">
               <SectionTitle>Links</SectionTitle>
@@ -574,13 +859,49 @@ export function createWeb(db: Db, version: string): Hono<WebEnv> {
   web.post("/i/:key/update", async (c) => {
     const key = c.req.param("key");
     const body = await c.req.parseBody();
-    const patch: { status?: string; priority?: number } = {};
-    const status = formString(body, "status");
-    const priority = formString(body, "priority");
-    if (status) patch.status = status;
-    if (priority) patch.priority = Number(priority);
-    updateIssue(db, c.get("actor"), key, patch);
-    return c.redirect(`/i/${key.toUpperCase()}`, 303);
+    const issue = getIssue(db, key);
+    const patch: UpdateIssueInput = {};
+
+    if (body.status !== undefined) patch.status = formString(body, "status");
+    if (body.priority !== undefined) patch.priority = Number(formString(body, "priority"));
+    if (body.title !== undefined && formString(body, "title") !== issue.title) {
+      patch.title = formString(body, "title");
+    }
+    if (body.description !== undefined) {
+      const description = formString(body, "description") || null;
+      if (description !== issue.description) patch.description = description;
+    }
+    if (body.assignee !== undefined) {
+      const assignee = formString(body, "assignee") || null;
+      if (assignee !== issue.assignee) patch.assignee = assignee;
+    }
+    if (body.epic !== undefined) {
+      const epic = formString(body, "epic").toUpperCase() || null;
+      if (epic !== issue.epic) patch.epic = epic;
+    }
+    if (body.labels !== undefined) {
+      const desired = [...new Set(commaList(formString(body, "labels")))];
+      const desiredSet = new Set(desired);
+      const currentSet = new Set(issue.labels);
+      patch.addLabels = desired.filter((label) => !currentSet.has(label));
+      patch.removeLabels = issue.labels.filter((label) => !desiredSet.has(label));
+    }
+
+    try {
+      updateIssue(db, c.get("actor"), key, patch);
+      return c.redirect(`/i/${issue.key}`, 303);
+    } catch (err) {
+      if (err instanceof DomainError) {
+        return c.redirect(`/i/${issue.key}?error=${encodeURIComponent(err.message)}`, 303);
+      }
+      throw err;
+    }
+  });
+
+  web.post("/i/:key/delete", (c) => {
+    const issue = getIssue(db, c.req.param("key"));
+    deleteIssue(db, c.get("actor"), issue.key);
+    return c.redirect(`/p/${issue.project}?deleted=1`, 303);
   });
 
   web.post("/i/:key/comment", async (c) => {

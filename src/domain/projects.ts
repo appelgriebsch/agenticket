@@ -22,13 +22,15 @@ export function createProject(db: Db, _actor: Actor, input: ProjectInput): Proje
       `invalid project key "${input.key}": must match ${KEY_RE} (e.g. "AGT")`,
     );
   }
+  const name = input.name.trim();
+  if (!name) throw new DomainError("validation", "name must not be empty");
   const now = Date.now();
   try {
     return db
       .insert(projects)
       .values({
         key,
-        name: input.name,
+        name,
         description: input.description ?? null,
         createdAt: now,
         updatedAt: now,
@@ -60,10 +62,14 @@ export function updateProject(
   patch: { name?: string; description?: string | null },
 ): Project {
   const project = getProject(db, key);
+  const name = patch.name?.trim();
+  if (patch.name !== undefined && !name) {
+    throw new DomainError("validation", "name must not be empty");
+  }
   return db
     .update(projects)
     .set({
-      ...(patch.name !== undefined ? { name: patch.name } : {}),
+      ...(name !== undefined ? { name } : {}),
       ...(patch.description !== undefined ? { description: patch.description } : {}),
       updatedAt: Date.now(),
     })

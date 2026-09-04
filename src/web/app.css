@@ -81,6 +81,12 @@
   .btn-danger {
     @apply border-transparent bg-transparent text-destructive shadow-none hover:bg-destructive/10;
   }
+  .issue-select {
+    accent-color: var(--foreground);
+  }
+  .issue-row:has(.issue-select:checked) {
+    @apply bg-muted/70;
+  }
 
   /* cards */
   .card {

@@ -142,7 +142,7 @@ cookie (`POST /api/v1/auth/login`).
 ```text
 GET/POST        /api/v1/projects            GET/PATCH/DELETE /api/v1/projects/:key
 GET/POST        /api/v1/projects/:key/labels
-GET/POST        /api/v1/issues              GET/PATCH/DELETE /api/v1/issues/:key
+GET/POST/DELETE /api/v1/issues              GET/PATCH/DELETE /api/v1/issues/:key
 GET/POST        /api/v1/issues/:key/comments
 POST/DELETE     /api/v1/issues/:key/links
 GET             /api/v1/ready
@@ -150,14 +150,19 @@ GET/POST        /api/v1/tokens              DELETE /api/v1/tokens/:id   (admin)
 ```
 
 External surfaces always use issue keys (`AGT-42`); internal ids never leak.
+Bulk issue deletion is admin-only: `DELETE /api/v1/issues` with a JSON body such
+as `{ "keys": ["AGT-42", "AGT-43"] }`. The batch is atomic.
 
 ## Web UI
 
 Server-rendered, dark, fast — no SPA, works with JavaScript disabled. Pages:
-project overview, per-project issue list (command-line style filters, epics as
-trees, derived blocked flags), issue detail (status/priority controls, comments
-with ⚡agent / @human attribution), the ready queue as agents see it, and token
-admin (create shows the plaintext exactly once; revoke).
+project overview with create/delete controls, per-project issue list
+(command-line style filters, epics as trees, derived blocked flags, select-all
+bulk deletion), issue create/edit/delete and detail views (status/priority
+controls, comments with ⚡agent / @human attribution), project settings, the
+ready queue as agents see it, and token admin (create shows the plaintext
+exactly once; revoke). Deleting a project also deletes all of its issues and
+related activity.
 
 ## Self-hosting notes
 

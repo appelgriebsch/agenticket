@@ -15,10 +15,12 @@ import {
   createProject,
   DomainError,
   deleteIssue,
+  deleteIssues,
   deleteProject,
   getIssue,
   getProject,
   type IssueDetail,
+  issueBulkDeleteSchema,
   issueCreateSchema,
   issuePatchSchema,
   labelCreateSchema,
@@ -191,6 +193,12 @@ export function createApi(db: Db): Hono<ApiEnv> {
   api.post("/issues", async (c) => {
     const input = await parseBody(c, issueCreateSchema);
     return c.json(serializeIssue(createIssue(db, c.get("actor"), input)), 201);
+  });
+
+  api.delete("/issues", requireAdmin, async (c) => {
+    const { keys } = await parseBody(c, issueBulkDeleteSchema);
+    const deleted = deleteIssues(db, c.get("actor"), keys);
+    return c.json({ ok: true, deleted });
   });
 
   api.get("/issues/:key", (c) => c.json(serializeIssue(getIssue(db, c.req.param("key")))));

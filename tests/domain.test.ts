@@ -7,6 +7,8 @@ import {
   createProject,
   DomainError,
   deleteIssue,
+  deleteIssues,
+  deleteProject,
   getIssue,
   linkIssues,
   listIssues,
@@ -31,6 +33,14 @@ describe("projects", () => {
     expect(() => createProject(conn.db, human, { key: "1BAD", name: "x" })).toThrow(DomainError);
     expect(() => createProject(conn.db, human, { key: "AGT", name: "dupe" })).toThrow(/exists/);
     expect(listProjects(conn.db).map((p) => p.key)).toEqual(["AGT", "WEB"]);
+  });
+
+  it("deletes a project and all of its issues", () => {
+    const issue = createIssue(conn.db, agent, { project: "AGT", title: "gone" });
+    addComment(conn.db, agent, issue.key, "also gone");
+    deleteProject(conn.db, human, "AGT");
+    expect(listProjects(conn.db)).toEqual([]);
+    expect(() => getIssue(conn.db, issue.key)).toThrow(/not found/);
   });
 });
 
@@ -108,6 +118,30 @@ describe("issues", () => {
     const child = createIssue(conn.db, agent, { project: "AGT", title: "c", epic: epic.key });
     deleteIssue(conn.db, human, epic.key);
     expect(getIssue(conn.db, child.key).epic).toBeNull();
+  });
+
+  it("bulk deletes atomically and detaches surviving epic children", () => {
+    const epic = createIssue(conn.db, agent, { project: "AGT", title: "epic", kind: "epic" });
+    const deletedChild = createIssue(conn.db, agent, {
+      project: "AGT",
+      title: "delete me",
+      epic: epic.key,
+    });
+    const survivor = createIssue(conn.db, agent, {
+      project: "AGT",
+      title: "keep me",
+      epic: epic.key,
+    });
+
+    expect(() => deleteIssues(conn.db, human, [deletedChild.key, "AGT-999"])).toThrow(/not found/);
+    expect(getIssue(conn.db, deletedChild.key).title).toBe("delete me");
+
+    expect(deleteIssues(conn.db, human, [epic.key.toLowerCase(), deletedChild.key])).toEqual([
+      epic.key,
+      deletedChild.key,
+    ]);
+    expect(getIssue(conn.db, survivor.key).epic).toBeNull();
+    expect(() => getIssue(conn.db, deletedChild.key)).toThrow(/not found/);
   });
 });
 

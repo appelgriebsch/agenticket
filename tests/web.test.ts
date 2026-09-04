@@ -16,11 +16,19 @@ async function get(path: string, init: RequestInit = {}) {
   return app.request(path, { ...init, headers: { cookie, ...(init.headers ?? {}) } });
 }
 
-async function postForm(path: string, fields: Record<string, string>) {
+async function postForm(path: string, fields: Record<string, string | string[]>) {
+  const body = new URLSearchParams();
+  for (const [name, value] of Object.entries(fields)) {
+    if (Array.isArray(value)) {
+      for (const item of value) body.append(name, item);
+    } else {
+      body.set(name, value);
+    }
+  }
   return app.request(path, {
     method: "POST",
     headers: { cookie, "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams(fields).toString(),
+    body: body.toString(),
   });
 }
 
@@ -157,6 +165,81 @@ describe("web pages", () => {
     expect(html).toContain("in progress");
     expect(html).toContain("looks good from the UI");
     expect(html).toMatch(/<span class="human">.*admin<\/span>/); // human attribution
+  });
+
+  it("supports project and issue CRUD, including bulk deletion", async () => {
+    await postForm("/projects", { key: "crd", name: "CRUD project", description: "before" });
+    const updatedProject = await postForm("/p/CRD/update", {
+      name: "Updated project",
+      description: "after",
+    });
+    expect(updatedProject.status).toBe(303);
+
+    const first = await postForm("/p/CRD/issues", {
+      title: "First task",
+      description: "old description",
+      kind: "issue",
+      priority: "1",
+      assignee: "",
+      labels: "ui, cleanup",
+    });
+    const second = await postForm("/p/CRD/issues", {
+      title: "Second task",
+      kind: "issue",
+      priority: "2",
+      labels: "",
+    });
+    expect(first.headers.get("location")).toBe("/i/CRD-1");
+    expect(second.headers.get("location")).toBe("/i/CRD-2");
+
+    const edited = await postForm("/i/CRD-1/update", {
+      title: "Edited task",
+      description: "new description",
+      assignee: "admin",
+      epic: "",
+      labels: "ui",
+    });
+    expect(edited.status).toBe(303);
+    const detail = await (await get("/i/CRD-1")).text();
+    expect(detail).toContain("Edited task");
+    expect(detail).toContain("new description");
+    expect(detail).not.toContain(">cleanup<");
+
+    const projectPage = await (await get("/p/CRD")).text();
+    expect(projectPage).toContain("Updated project");
+    expect(projectPage).toContain("data-select-all");
+    expect(projectPage.match(/name="issues"/g)).toHaveLength(2);
+
+    const bulk = await postForm("/p/CRD/issues/delete", {
+      issues: ["CRD-1", "CRD-2"],
+      f: "",
+    });
+    expect(bulk.status).toBe(303);
+    expect(bulk.headers.get("location")).toBe("/p/CRD?deleted=2");
+    expect(await (await get("/p/CRD")).text()).toContain("No issues match");
+  });
+
+  it("deletes one issue and cascades all issues when deleting a project", async () => {
+    await postForm("/p/CRD/issues", {
+      title: "Single delete",
+      kind: "issue",
+      priority: "2",
+      labels: "",
+    });
+    const single = await postForm("/i/CRD-3/delete", {});
+    expect(single.headers.get("location")).toBe("/p/CRD?deleted=1");
+    expect((await get("/i/CRD-3")).status).toBe(404);
+
+    await postForm("/p/CRD/issues", {
+      title: "Cascade delete",
+      kind: "issue",
+      priority: "2",
+      labels: "",
+    });
+    const project = await postForm("/p/CRD/delete", {});
+    expect(project.headers.get("location")).toBe("/?deleted=CRD");
+    expect((await get("/p/CRD")).status).toBe(404);
+    expect((await get("/i/CRD-4")).status).toBe(404);
   });
 
   it("shows the ready queue excluding blocked issues", async () => {

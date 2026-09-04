@@ -275,11 +275,41 @@ export function closeIssue(
 }
 
 export function deleteIssue(db: Db, _actor: Actor, key: string): void {
-  const row = requireIssueRow(db, key);
-  if (row.kind === "epic") {
-    db.update(issues).set({ epicId: null }).where(eq(issues.epicId, row.id)).run();
+  deleteIssues(db, _actor, [key]);
+}
+
+/**
+ * Delete several issues atomically. Every key is resolved before any rows are
+ * changed, so a typo cannot leave the caller with a partially deleted batch.
+ * Children of deleted epics are detached unless they are in the batch too.
+ */
+export function deleteIssues(db: Db, _actor: Actor, keys: string[]): string[] {
+  const normalized = [...new Set(keys.map((key) => key.trim().toUpperCase()).filter(Boolean))];
+  if (normalized.length === 0) {
+    throw new DomainError("validation", "select at least one issue to delete");
   }
-  db.delete(issues).where(eq(issues.id, row.id)).run();
+
+  const rows = db.select().from(issues).where(inArray(issues.key, normalized)).all();
+  const found = new Set(rows.map((row) => row.key));
+  const missing = normalized.filter((key) => !found.has(key));
+  if (missing.length > 0) throw notFound(`issue "${missing[0]}"`);
+
+  db.transaction((tx) => {
+    const epicIds = rows.filter((row) => row.kind === "epic").map((row) => row.id);
+    if (epicIds.length > 0) {
+      tx.update(issues).set({ epicId: null }).where(inArray(issues.epicId, epicIds)).run();
+    }
+    tx.delete(issues)
+      .where(
+        inArray(
+          issues.id,
+          rows.map((row) => row.id),
+        ),
+      )
+      .run();
+  });
+
+  return normalized;
 }
 
 export function listIssues(db: Db, filter: ListIssuesFilter = {}): IssueSummary[] {

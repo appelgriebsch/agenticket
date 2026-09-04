@@ -254,6 +254,37 @@ describe("issues", () => {
     });
     expect(asAdmin.status).toBe(200);
   });
+
+  it("lets admins bulk delete issues atomically", async () => {
+    await seedIssue({ title: "one" });
+    await seedIssue({ title: "two" });
+
+    const asAgent = await app.request(
+      "/api/v1/issues",
+      json("DELETE", { keys: ["AGT-1", "AGT-2"] }, bearer),
+    );
+    expect(asAgent.status).toBe(403);
+
+    const cookie = await login();
+    const invalid = await app.request(
+      "/api/v1/issues",
+      json("DELETE", { keys: ["AGT-1", "AGT-999"] }, cookie),
+    );
+    expect(invalid.status).toBe(404);
+    expect(
+      (await jso(await app.request("/api/v1/issues?project=AGT", { headers: cookie }))).length,
+    ).toBe(2);
+
+    const deleted = await app.request(
+      "/api/v1/issues",
+      json("DELETE", { keys: ["agt-1", "AGT-2"] }, cookie),
+    );
+    expect(deleted.status).toBe(200);
+    expect(await jso(deleted)).toEqual({ ok: true, deleted: ["AGT-1", "AGT-2"] });
+    expect(await jso(await app.request("/api/v1/issues?project=AGT", { headers: cookie }))).toEqual(
+      [],
+    );
+  });
 });
 
 describe("comments", () => {

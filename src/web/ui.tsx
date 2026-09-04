@@ -145,14 +145,27 @@ const CELL = "px-4 py-2.5 align-middle whitespace-nowrap";
 export const KEY_TEXT = "font-mono text-sm text-muted-foreground";
 
 /** One issue row. `tree` renders the child connector for issues under an epic. */
-export const IssueRow: FC<{ issue: IssueSummary; tree?: "mid" | "last"; extra?: Child }> = ({
-  issue,
-  tree,
-  extra,
-}) => {
+export const IssueRow: FC<{
+  issue: IssueSummary;
+  tree?: "mid" | "last";
+  extra?: Child;
+  selectable?: boolean;
+}> = ({ issue, tree, extra, selectable = false }) => {
   const epic = issue.kind === "epic";
   return (
-    <tr class="border-b border-border transition-colors last:border-0 hover:bg-muted/50">
+    <tr class="issue-row border-b border-border transition-colors last:border-0 hover:bg-muted/50">
+      {selectable ? (
+        <td class="w-10 px-4 py-2.5 align-middle">
+          <input
+            class="issue-select size-4 cursor-pointer"
+            type="checkbox"
+            name="issues"
+            value={issue.key}
+            aria-label={`Select ${issue.key}`}
+            data-issue-select
+          />
+        </td>
+      ) : null}
       <td
         class={`${CELL} ${
           epic ? "font-mono text-sm text-violet-600 dark:text-violet-400" : KEY_TEXT
@@ -203,9 +216,19 @@ export const IssueRow: FC<{ issue: IssueSummary; tree?: "mid" | "last"; extra?: 
 const TH =
   "h-10 px-4 text-left align-middle text-xs font-medium tracking-wide whitespace-nowrap text-muted-foreground";
 
-export const IssueTableHead: FC = () => (
+export const IssueTableHead: FC<{ selectable?: boolean }> = ({ selectable = false }) => (
   <thead>
     <tr class="border-b border-border bg-muted/40">
+      {selectable ? (
+        <th class="w-10 px-4 text-left align-middle">
+          <input
+            class="issue-select size-4 cursor-pointer"
+            type="checkbox"
+            aria-label="Select all visible issues"
+            data-select-all
+          />
+        </th>
+      ) : null}
       <th class={TH}>Key</th>
       <th class={TH}>Title</th>
       <th class={TH}>Status</th>
